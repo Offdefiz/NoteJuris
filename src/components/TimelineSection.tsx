@@ -41,7 +41,7 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
   };
 
   return (
-    <section className="space-y-6 pt-4">
+    <section id="timeline-section" className="space-y-6 pt-4 scroll-mt-20">
       {/* Section Header with Left/Right Scroll Arrows & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>

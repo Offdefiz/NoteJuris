@@ -15,7 +15,7 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
   onResetZoom,
 }) => {
   return (
-    <aside aria-label="Controle de visualização da tela" className="fixed bottom-5 right-5 z-40 flex items-center gap-1 px-1.5 py-1 rounded-xl bg-white/95 dark:bg-[#181e2b]/95 backdrop-blur-md border border-[#dedbd3] dark:border-[#293245] shadow-lg text-[#474f60] dark:text-[#9ea8bd]">
+    <aside aria-label="Controle de visualização da tela" className="fixed bottom-20 lg:bottom-5 right-4 lg:right-5 z-30 flex items-center gap-1 px-1.5 py-1 rounded-xl bg-white/95 dark:bg-[#181e2b]/95 backdrop-blur-md border border-[#dedbd3] dark:border-[#293245] shadow-lg text-[#474f60] dark:text-[#9ea8bd]">
       <button
         onClick={onZoomOut}
         className="p-1.5 rounded-lg hover:bg-[#edebe6] dark:hover:bg-[#252e40] text-[#555d6e] dark:text-[#a0abbd] hover:text-[#181d28] dark:hover:text-white transition-colors disabled:opacity-30"

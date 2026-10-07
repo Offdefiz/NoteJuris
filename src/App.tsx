@@ -17,6 +17,8 @@ import { ShareModal } from './components/ShareModal';
 import { GeminiDrawer } from './components/GeminiDrawer';
 import { CreateModal } from './components/CreateModal';
 import { FlashcardsModal } from './components/FlashcardsModal';
+import { BottomNav } from './components/BottomNav';
+import { MobileDisciplinesSheet } from './components/MobileDisciplinesSheet';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -66,6 +68,22 @@ function MainApp() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createModalMode, setCreateModalMode] = useState<'discipline' | 'topic'>('topic');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMobileDisciplinesOpen, setIsMobileDisciplinesOpen] = useState(false);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'notebook' | 'timeline' | 'flashcards'>('notebook');
+
+  // Mobile navigation handlers
+  const handleNavigateNotebook = () => {
+    setMobileActiveTab('notebook');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavigateTimeline = () => {
+    setMobileActiveTab('timeline');
+    const el = document.getElementById('timeline-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   // Save disciplines to localStorage
   useEffect(() => {
@@ -396,7 +414,7 @@ function MainApp() {
         />
 
         {/* Scalable Canvas container */}
-        <div className="flex-1 overflow-x-hidden p-4 sm:p-8 lg:p-10 transition-transform origin-top">
+        <div className="flex-1 overflow-x-hidden p-4 sm:p-8 lg:p-10 pb-28 lg:pb-12 transition-transform origin-top">
           <div
             style={{
               zoom: `${zoom}%`,
@@ -562,6 +580,33 @@ function MainApp() {
         isOpen={isFlashcardsOpen}
         onClose={() => setIsFlashcardsOpen(false)}
         document={documentData}
+      />
+
+      {/* Mobile Bottom Navigation Bar (Instagram/Facebook Style) */}
+      <BottomNav
+        activeTab={mobileActiveTab}
+        onNavigateNotebook={handleNavigateNotebook}
+        onNavigateTimeline={handleNavigateTimeline}
+        onOpenGemini={() => setIsGeminiOpen(true)}
+        onOpenFlashcards={() => {
+          setMobileActiveTab('flashcards');
+          setIsFlashcardsOpen(true);
+        }}
+        onOpenDisciplines={() => setIsMobileDisciplinesOpen(true)}
+      />
+
+      {/* Mobile Disciplines & Matérias Bottom Sheet */}
+      <MobileDisciplinesSheet
+        isOpen={isMobileDisciplinesOpen}
+        onClose={() => setIsMobileDisciplinesOpen(false)}
+        disciplines={disciplines}
+        activeDisciplineId={activeDisciplineId}
+        activeTopicId={activeTopicId}
+        onSelectTopic={handleSelectTopic}
+        onOpenCreateModal={(mode) => {
+          setCreateModalMode(mode);
+          setIsCreateModalOpen(true);
+        }}
       />
     </div>
   );
