@@ -1,0 +1,88 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with display name, email, study role, and theme preference",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "User UID from Firebase Auth"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "description": "User role or academic level",
+          "maxLength": 50
+        },
+        "themePreference": {
+          "type": "string",
+          "description": "User preferred theme",
+          "enum": ["light", "dark", "system"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Account creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last profile update timestamp"
+        }
+      },
+      "required": ["userId", "email"]
+    },
+    "StudyNotebook": {
+      "title": "StudyNotebook",
+      "description": "A notebook containing flowchart, timeline items, and notes for a legal study topic",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID"
+        },
+        "disciplineId": {
+          "type": "string",
+          "description": "Discipline category key (e.g. processual-penal, penal, constitucional)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Document title",
+          "maxLength": 200
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Document subtitle",
+          "maxLength": 200
+        },
+        "content": {
+          "type": "string",
+          "description": "Serialized notebook data (timeline, flow, custom notes)"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp"
+        }
+      },
+      "required": ["userId", "disciplineId", "title"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private user profile documents"
+    },
+    "/users/{userId}/notebooks/{notebookId}": {
+      "schema": "StudyNotebook",
+      "description": "User personal study notebooks and flowcharts"
+    }
+  }
+}

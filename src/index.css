@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Custom Print Rules for Legal Summaries */
+@media print {
+  aside,
+  header,
+  aside[aria-label="Controle de visualização da tela"],
+  button {
+    display: none !important;
+  }
+  body, main {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+  }
+  .max-w-\[1280px\] {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+}

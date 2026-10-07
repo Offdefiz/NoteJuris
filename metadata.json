@@ -1,0 +1,6 @@
+{
+  "name": "Caderno Jurídico — Estudo de Direito",
+  "description": "Fluxogramas estruturados e linha do tempo interativa para organizar e anotar aulas de Direito Processual Penal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
