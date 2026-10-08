@@ -315,7 +315,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {user ? profile?.displayName || 'Estudante' : 'Entrar / Cadastrar'}
                 </p>
                 <p className="text-[10px] text-[#767e8f] dark:text-[#8d97ac] truncate">
-                  {user ? profile?.role || 'Meu espaço' : 'Sincronizar na nuvem'}
+                  {user ? profile?.role || 'Meu espaço' : 'Conta local / Servidor'}
                 </p>
               </div>
             </button>

@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  caderno-juridico:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: caderno_juridico_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      # Opcional: Adicione sua chave pessoal do Google Gemini para respostas dinâmicas com IA.
+      # Se deixar em branco, o sistema funciona 100% autônomo com o motor de modelos jurídicos offline!
+      - GEMINI_API_KEY=
+    volumes:
+      - ./data:/app/data

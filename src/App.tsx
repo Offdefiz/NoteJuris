@@ -20,7 +20,7 @@ import { FlashcardsModal } from './components/FlashcardsModal';
 import { BottomNav } from './components/BottomNav';
 import { MobileDisciplinesSheet } from './components/MobileDisciplinesSheet';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, isFirebaseAvailable } from './firebase';
 
 function MainApp() {
   const { user } = useAuth();
@@ -90,16 +90,16 @@ function MainApp() {
     localStorage.setItem('caderno_juridico_disciplines', JSON.stringify(disciplines));
   }, [disciplines]);
 
-  // Cloud sync when user logs in
+  // Cloud sync when user logs in (only if Firebase is active)
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isFirebaseAvailable || !db) return;
     const fetchUserNotebook = async () => {
       try {
         const notebookRef = doc(db, 'users', user.uid, 'notebooks', activeTopicId);
         const snap = await getDoc(notebookRef);
         if (snap.exists()) {
           const remoteData = snap.data();
-          if (remoteData.content) {
+          if (remoteData?.content) {
             const parsed = JSON.parse(remoteData.content);
             setDocumentData(parsed);
           }
@@ -111,7 +111,71 @@ function MainApp() {
     fetchUserNotebook();
   }, [user, activeTopicId]);
 
-  // Autosave handler (Local + Firestore debounce)
+  // Full Notebook Backup (all disciplines, topics, and local databases)
+  const handleExportFullBackup = () => {
+    const allDocs: Record<string, any> = {};
+    disciplines.forEach((d) => {
+      d.topics.forEach((t) => {
+        const saved = localStorage.getItem(`caderno_juridico_doc_${t.id}`);
+        if (saved) {
+          try {
+            allDocs[t.id] = JSON.parse(saved);
+          } catch {}
+        }
+      });
+    });
+    allDocs[documentData.id] = documentData;
+
+    const fullBackup = {
+      appName: 'Caderno Jurídico',
+      version: '2.0-selfhosted',
+      exportedAt: new Date().toISOString(),
+      disciplines,
+      activeDisciplineId,
+      activeTopicId,
+      documents: allDocs,
+    };
+
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(fullBackup, null, 2));
+    const downloadAnchor = window.document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `caderno-juridico-backup-completo-${new Date().toISOString().slice(0, 10)}.json`);
+    window.document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+
+    fetch('/api/storage/backup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ backupData: fullBackup }),
+    }).catch(() => {});
+  };
+
+  const handleImportFullBackup = (importedData: any) => {
+    if (!importedData) return;
+    if (importedData.disciplines && importedData.documents) {
+      setDisciplines(importedData.disciplines);
+      localStorage.setItem('caderno_juridico_disciplines', JSON.stringify(importedData.disciplines));
+
+      Object.entries(importedData.documents).forEach(([id, docData]) => {
+        localStorage.setItem(`caderno_juridico_doc_${id}`, JSON.stringify(docData));
+      });
+
+      if (importedData.activeTopicId && importedData.documents[importedData.activeTopicId]) {
+        setActiveTopicId(importedData.activeTopicId);
+        setActiveDisciplineId(importedData.activeDisciplineId || importedData.disciplines[0]?.id);
+        setDocumentData(importedData.documents[importedData.activeTopicId]);
+      } else if (importedData.disciplines[0]?.topics[0]) {
+        const firstTop = importedData.disciplines[0].topics[0];
+        setActiveTopicId(firstTop.id);
+        setActiveDisciplineId(importedData.disciplines[0].id);
+        const saved = importedData.documents[firstTop.id];
+        if (saved) setDocumentData(saved);
+      }
+    }
+  };
+
+  // Autosave handler (Local + optional Firestore debounce)
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const triggerSave = useCallback(
@@ -124,7 +188,7 @@ function MainApp() {
       }
 
       saveTimeoutRef.current = setTimeout(async () => {
-        if (user) {
+        if (user && isFirebaseAvailable && db) {
           try {
             const notebookRef = doc(db, 'users', user.uid, 'notebooks', newDoc.id);
             await setDoc(
@@ -140,7 +204,7 @@ function MainApp() {
               { merge: true }
             );
           } catch (err) {
-            console.error('Firestore save error:', err);
+            console.warn('Firestore sync skipped in local mode:', err);
           }
         }
         setIsSaving(false);
@@ -565,7 +629,10 @@ function MainApp() {
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
         notebookDoc={documentData}
+        disciplines={disciplines}
         onImportBackup={(newDoc) => updateDoc(() => newDoc)}
+        onExportFullBackup={handleExportFullBackup}
+        onImportFullBackup={handleImportFullBackup}
       />
 
       {/* Share Modal */}

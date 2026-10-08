@@ -1,13 +1,48 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
 
-const app = initializeApp(firebaseConfig);
+let firebaseConfig: any = null;
 
-// CRITICAL: The app will break without firebaseConfig.firestoreDatabaseId
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-export const auth = getAuth(app);
+// Safely probe for firebase-applet-config.json without crashing in self-hosted environments
+try {
+  // @ts-ignore
+  const imported = await import('../firebase-applet-config.json');
+  firebaseConfig = imported.default || imported;
+} catch {
+  // Operating in 100% self-hosted mode (no Google Cloud / Firebase config)
+  firebaseConfig = null;
+}
+
+let app: any = null;
+let dbInstance: any = null;
+let authInstance: any = null;
+let isFirebaseAvailable = false;
+
+// Only initialize if a valid project configuration with actual keys is present
+if (
+  firebaseConfig &&
+  firebaseConfig.apiKey &&
+  firebaseConfig.apiKey !== '' &&
+  firebaseConfig.projectId &&
+  firebaseConfig.projectId !== ''
+) {
+  try {
+    app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
+    dbInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined);
+    authInstance = getAuth(app);
+    isFirebaseAvailable = true;
+  } catch {
+    // Graceful fallback to self-hosted offline mode
+    isFirebaseAvailable = false;
+    dbInstance = null;
+    authInstance = null;
+  }
+}
+
+export const db = dbInstance;
+export const auth = authInstance;
+export { isFirebaseAvailable };
 
 // Skill requirement: OperationType & FirestoreErrorInfo error handling
 export enum OperationType {
@@ -37,34 +72,35 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  if (!isFirebaseAvailable) return;
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData?.map(provider => ({
-        providerId: provider.providerId,
-        email: provider.email,
-      })) || [],
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+      isAnonymous: auth?.currentUser?.isAnonymous,
+      tenantId: auth?.currentUser?.tenantId,
+      providerInfo:
+        auth?.currentUser?.providerData?.map((provider: any) => ({
+          providerId: provider.providerId,
+          email: provider.email,
+        })) || [],
     },
     operationType,
     path,
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  console.warn('Firestore Notice: ', JSON.stringify(errInfo));
 }
 
-// Skill requirement: Validate Connection to Firestore on boot
+// Validate Connection to Firestore safely (only if Firebase is active)
 export async function testConnection() {
+  if (!isFirebaseAvailable || !db) return;
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn('Firebase Firestore client is offline or connecting...');
-    }
+  } catch {
+    // Self-hosted or offline client
   }
 }
+
 testConnection();

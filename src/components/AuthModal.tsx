@@ -218,13 +218,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           /* Sign In / Sign Up Form */
           <div className="space-y-4">
             <div>
-              <h3 className="font-serif text-2xl font-bold text-[#151924] dark:text-[#f8fafc]">
-                {mode === 'signin' ? 'Acessar Caderno' : 'Criar Nova Conta'}
-              </h3>
-              <p className="text-[12px] text-[#687081] dark:text-[#9ea8bc] mt-0.5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif text-2xl font-bold text-[#151924] dark:text-[#f8fafc]">
+                  {mode === 'signin' ? 'Acessar Caderno' : 'Criar Nova Conta'}
+                </h3>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-semibold">
+                  Servidor Local
+                </span>
+              </div>
+              <p className="text-[12px] text-[#687081] dark:text-[#9ea8bc] mt-1">
                 {mode === 'signin'
-                  ? 'Entre para salvar suas anotações e fluxogramas na nuvem.'
-                  : 'Crie sua conta para sincronizar todos os seus cadernos jurídicos.'}
+                  ? 'Entre com seu e-mail e senha cadastrados no servidor.'
+                  : 'Crie sua conta para personalizar seu perfil e anotações.'}
               </p>
             </div>
 
