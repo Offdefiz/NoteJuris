@@ -7,15 +7,19 @@ export interface GeneratedCard {
   category: string;
 }
 
+export type AiExecutionMode = 'custom_key' | 'static_fallback';
+
 interface AiContextType {
   apiKey: string;
   isOfflineMode: boolean;
+  aiMode: AiExecutionMode;
   hasServerKey: boolean;
   isConfigModalOpen: boolean;
   isKeyConfigured: boolean;
   openConfigModal: () => void;
   closeConfigModal: () => void;
-  saveSettings: (newKey: string, offline: boolean) => void;
+  saveSettings: (newKey: string, offlineOrMode: boolean | AiExecutionMode) => void;
+  setAiMode: (mode: AiExecutionMode) => void;
   testApiKey: (keyToTest?: string) => Promise<{ success: boolean; message: string }>;
   getAuthHeaders: () => Record<string, string>;
   askAiAssistant: (params: { prompt: string; currentTitle: string; discipline: string }) => Promise<{ text: string; isOffline: boolean }>;
@@ -29,9 +33,16 @@ export const AiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     return localStorage.getItem('caderno_custom_gemini_key') || '';
   });
 
-  const [isOfflineMode, setIsOfflineMode] = useState<boolean>(() => {
-    return localStorage.getItem('caderno_ai_offline_mode') === 'true';
+  const [aiMode, setAiModeState] = useState<AiExecutionMode>(() => {
+    const savedMode = localStorage.getItem('caderno_ai_mode') as AiExecutionMode | null;
+    if (savedMode === 'static_fallback' || savedMode === 'custom_key') {
+      return savedMode;
+    }
+    const legacyOffline = localStorage.getItem('caderno_ai_offline_mode') === 'true';
+    return legacyOffline ? 'static_fallback' : 'custom_key';
   });
+
+  const isOfflineMode = aiMode === 'static_fallback';
 
   const [hasServerKey, setHasServerKey] = useState<boolean>(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState<boolean>(false);
@@ -53,12 +64,27 @@ export const AiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const openConfigModal = useCallback(() => setIsConfigModalOpen(true), []);
   const closeConfigModal = useCallback(() => setIsConfigModalOpen(false), []);
 
-  const saveSettings = useCallback((newKey: string, offline: boolean) => {
+  const setAiMode = useCallback((mode: AiExecutionMode) => {
+    setAiModeState(mode);
+    localStorage.setItem('caderno_ai_mode', mode);
+    localStorage.setItem('caderno_ai_offline_mode', mode === 'static_fallback' ? 'true' : 'false');
+  }, []);
+
+  const saveSettings = useCallback((newKey: string, offlineOrMode: boolean | AiExecutionMode) => {
     const trimmed = newKey.trim();
     setApiKey(trimmed);
-    setIsOfflineMode(offline);
+    
+    let resolvedMode: AiExecutionMode = 'custom_key';
+    if (typeof offlineOrMode === 'boolean') {
+      resolvedMode = offlineOrMode ? 'static_fallback' : 'custom_key';
+    } else if (offlineOrMode === 'static_fallback' || offlineOrMode === 'custom_key') {
+      resolvedMode = offlineOrMode;
+    }
+
+    setAiModeState(resolvedMode);
     localStorage.setItem('caderno_custom_gemini_key', trimmed);
-    localStorage.setItem('caderno_ai_offline_mode', offline ? 'true' : 'false');
+    localStorage.setItem('caderno_ai_mode', resolvedMode);
+    localStorage.setItem('caderno_ai_offline_mode', resolvedMode === 'static_fallback' ? 'true' : 'false');
   }, []);
 
   const getAuthHeaders = useCallback((): Record<string, string> => {
@@ -168,12 +194,14 @@ export const AiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       value={{
         apiKey,
         isOfflineMode,
+        aiMode,
         hasServerKey,
         isConfigModalOpen,
         isKeyConfigured,
         openConfigModal,
         closeConfigModal,
         saveSettings,
+        setAiMode,
         testApiKey,
         getAuthHeaders,
         askAiAssistant,
