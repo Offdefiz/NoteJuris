@@ -102,7 +102,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                   placeholder="Ex: Direito Civil, Direito Administrativo..."
                   value={disciplineName}
                   onChange={(e) => setDisciplineName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88] dark:focus:border-[#60a5fa]"
+                  className="w-full px-3.5 py-2.5 text-[16px] sm:text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88] dark:focus:border-[#60a5fa]"
                 />
               </div>
 
@@ -191,7 +191,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                   placeholder="Ex: Teoria da Prova, Audiência de Custódia..."
                   value={topicTitle}
                   onChange={(e) => setTopicTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
+                  className="w-full px-3.5 py-2 text-[16px] sm:text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
                 />
               </div>
 
@@ -205,7 +205,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                     value={lessonMeta}
                     onChange={(e) => setLessonMeta(e.target.value)}
                     placeholder="Ex: AULA 05"
-                    className="w-full px-3.5 py-2 text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
+                    className="w-full px-3.5 py-2 text-[16px] sm:text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
                   />
                 </div>
                 <div>
@@ -217,7 +217,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                     value={topicSubtitle}
                     onChange={(e) => setTopicSubtitle(e.target.value)}
                     placeholder="Ex: Rito comum ordinário"
-                    className="w-full px-3.5 py-2 text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
+                    className="w-full px-3.5 py-2 text-[16px] sm:text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
                   />
                 </div>
               </div>

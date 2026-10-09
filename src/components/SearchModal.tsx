@@ -167,7 +167,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Pesquisar por artigos (ex: art. 396), ritos, prazos ou termos..."
-            className="w-full px-3 text-[14px] bg-transparent text-[#181d28] dark:text-white placeholder-[#8e97a8] focus:outline-hidden"
+            className="w-full px-3 text-[16px] sm:text-[14px] bg-transparent text-[#181d28] dark:text-white placeholder-[#8e97a8] focus:outline-hidden"
           />
           <button
             onClick={onClose}

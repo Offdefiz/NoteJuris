@@ -6,6 +6,24 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
+/* Prevenção de Auto-Zoom em dispositivos móveis ao tocar e digitar em campos editáveis */
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select,
+  [contenteditable="true"],
+  [contenteditable] {
+    font-size: 16px !important;
+  }
+}
+
+html,
+body {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 /* Custom Print Rules for Legal Summaries */
 @media print {
   aside,

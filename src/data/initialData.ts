@@ -69,6 +69,12 @@ export const defaultDisciplines: Discipline[] = [
         lessonMeta: 'AULA 01',
       },
       {
+        id: 'presidencia-republica-07',
+        title: 'Presidência da República & Sucessão',
+        subtitle: 'Impeachment, linha sucessória (Câmara, Senado, STF) e eleições diretas/indiretas',
+        lessonMeta: 'AULA 07',
+      },
+      {
         id: 'controle-constitucionalidade-06',
         title: 'Controle de Constitucionalidade',
         subtitle: 'Controle difuso e concentrado perante o STF',
@@ -329,3 +335,182 @@ export const sampleTopics: Record<string, Partial<NotebookDocument>> = {
     subtitle: 'Habeas Corpus, Mandado de Segurança e garantias do art. 5º',
   },
 };
+
+export const presidenciaRepublicaDocument: NotebookDocument = {
+  id: 'presidencia-republica-07',
+  disciplineId: 'constitucional',
+  disciplineName: 'Direito Constitucional',
+  lessonMeta: 'AULA 07',
+  courseMeta: 'DIREITO CONSTITUCIONAL — PODER EXECUTIVO',
+  title: 'Presidência da República — Sucessão, Substituição e Impeachment',
+  subtitle: 'Linha de substituição legal (Câmara, Senado, STF), rito do impeachment e regras de dupla vacância (eleições diretas x indiretas)',
+  timelineHeading: {
+    eyebrow: 'RITO CONSTITUCIONAL DE IMPEACHMENT',
+    title: 'Processo de Crime de Responsabilidade & Desfecho Sucessório',
+    note: 'CF/88, arts. 51, 52, 79, 80, 81, 85 e 86 • Lei Federal nº 1.079/1950',
+  },
+  timelineItems: [
+    {
+      id: 'step-01',
+      stepNumber: '01',
+      article: 'CF/88, art. 85 / Lei 1.079/50',
+      title: 'Notícia de Crime de Responsabilidade & Apresentação Popular',
+      detail: 'Qualquer cidadão brasileiro no gozo de seus direitos políticos pode apresentar denúncia fundamentada perante a Câmara dos Deputados imputando crime de responsabilidade ao Presidente da República.',
+      notes: 'O crime de responsabilidade possui natureza político-administrativa. Atentam contra a existência da União, o livre exercício dos Poderes, o cumprimento de decisões judiciais ou a lei orçamentária.',
+      type: 'conceito',
+    },
+    {
+      id: 'step-02',
+      stepNumber: '02',
+      article: 'CF/88, art. 51, I e art. 86',
+      title: 'Juízo do Presidente da Câmara & Autorização por 2/3',
+      detail: 'O Presidente da Câmara dos Deputados possui competência monocrática para receber ou rejeitar a denúncia. Recebida, forma-se comissão especial e o Plenário vota a admissibilidade.',
+      notes: 'Quórum estrito: 2/3 dos membros da Câmara dos Deputados (342 deputados). A Câmara realiza mero juízo político de autorização (licença para instaurar), e NÃO o julgamento do mérito.',
+      type: 'procedimento',
+    },
+    {
+      id: 'step-03',
+      stepNumber: '03',
+      article: 'CF/88, art. 86, § 1º, II e § 2º',
+      title: 'Instauração no Senado & Afastamento Cautelar (180 dias)',
+      detail: 'Remetida a autorização ao Senado Federal, este decide pela instauração do processo por maioria simples. Com a instauração, o Presidente fica suspenso de suas funções por até 180 dias.',
+      notes: 'Durante os 180 dias de afastamento preventivo, quem assume o comando do Executivo é o Vice-Presidente da República. Se decorrido esse prazo sem julgamento, cessa o afastamento.',
+      type: 'atencao',
+    },
+    {
+      id: 'step-04',
+      stepNumber: '04',
+      article: 'CF/88, art. 52, parágrafo único',
+      title: 'Sessão de Julgamento Presidida pelo Presidente do STF',
+      detail: 'No plenário do Senado Federal constituído em tribunal de julgamento, a presidência dos trabalhos é exercida exclusivamente pelo Presidente do Supremo Tribunal Federal.',
+      notes: 'O Presidente do STF atua como juiz presidente e condutor formal dos atos probatórios, garantindo a ampla defesa e o contraditório constitucional, resolvendo questões de ordem.',
+      type: 'procedimento',
+    },
+    {
+      id: 'step-05',
+      stepNumber: '05',
+      article: 'CF/88, art. 52, parágrafo único',
+      title: 'Votação Nominal & Quórum Qualificado de 2/3 no Senado',
+      detail: 'A condenação definitiva é proferida se obtiver o voto favorável de 2/3 dos membros do Senado Federal (54 senadores). Se atingido esse quórum, é lavrada sentença condenatória imediata.',
+      notes: 'Penalidades constitucionais cumulativas: Perda do cargo público de Presidente mais inabilitação obrigatória por 8 (oito) anos para o exercício de qualquer função pública.',
+      type: 'atencao',
+    },
+    {
+      id: 'step-06',
+      stepNumber: '06',
+      article: 'CF/88, arts. 79, 80 e 81',
+      title: 'Desfecho Sucessório: Posse Definitiva ou Dupla Vacância',
+      detail: 'Se condenado o Presidente, o Vice-Presidente é empossado em definitivo. Se não houver Vice (dupla vacância), o Presidente da Câmara assume interinamente e deflagra novas eleições.',
+      notes: 'Se a dupla vacância ocorrer nos primeiros 2 anos do mandato presidencial: Eleições DIRETAS pelo povo em 90 dias. Se ocorrer nos últimos 2 anos: Eleições INDIRETAS pelo Congresso em 30 dias (mandato-tampão).',
+      type: 'conceito',
+    },
+  ],
+  timelineAlerts: [
+    {
+      id: 'alert-01',
+      title: 'DISTINÇÃO CRUCIAL: SUCESSÃO DEFINITIVA vs SUBSTITUIÇÃO PROVISÓRIA',
+      text: 'Apenas o Vice-Presidente SUCEDE em caráter definitivo (art. 79 da CF). O Presidente da Câmara dos Deputados, o Presidente do Senado Federal e o Presidente do STF apenas SUBSTITUEM interinamente (art. 80 da CF), sem direito a mandato próprio de 4 anos.',
+    },
+    {
+      id: 'alert-02',
+      title: 'REGRA DO BIÊNIO DA DUPLA VACÂNCIA (ART. 81 DA CF/88)',
+      text: 'Vagando ambos os cargos: 1) Nos primeiros 2 anos = Eleição DIRETA pelo povo em 90 dias. 2) Nos últimos 2 anos = Eleição INDIRETA pelo Congresso Nacional em 30 dias. Em ambos os casos os eleitos cumprem mandato-tampão (restante do período).',
+    },
+  ],
+  flow: {
+    card1: {
+      number: '01',
+      eyebrow: 'CF/88 • ARTS. 79 E 80',
+      title: 'Linha de Substituição Legal e Sucessão Presidencial',
+      body: 'O Vice-Presidente é o único sucessor constitucional definitivo (assume em caso de morte, renúncia ou perda do mandato por impeachment). Em caso de impedimento de ambos ou vacância de ambos os cargos (dupla vacância), a chefia provisória é exercida sucessivamente por:',
+      tags: [
+        'Vice-Presidente: Único Sucessor Definitivo',
+        '1º Substituto: Presidente da Câmara dos Deputados',
+        '2º Substituto: Presidente do Senado Federal',
+        '3º Substituto: Presidente do STF',
+      ],
+    },
+    card2: {
+      number: '02',
+      eyebrow: 'BIFURCAÇÃO TEMPORAL • ART. 81',
+      title: 'Dupla Vacância — Eleições Diretas vs Indiretas',
+      branches: [
+        {
+          letter: 'A',
+          title: 'Primeiros 2 anos do mandato (Art. 81, caput)',
+          note: 'Ocorre ELEIÇÃO DIRETA realizada pelo povo no prazo de 90 (noventa) dias após aberta a última vaga. O Presidente da Câmara substitui até a posse.',
+        },
+        {
+          letter: 'B',
+          title: 'Últimos 2 anos do mandato (Art. 81, § 1º)',
+          note: 'Ocorre ELEIÇÃO INDIRETA realizada pelo Congresso Nacional (sessão conjunta) no prazo de 30 (trinta) dias após aberta a última vaga.',
+        },
+      ],
+      annotation: 'Regra do Mandato-Tampão (Art. 81, § 2º): Em qualquer dos casos, os novos eleitos deverão apenas completar o período remanescente dos mandatos dos antecessores.',
+    },
+    card3: {
+      number: '03',
+      eyebrow: 'CRIMES DE RESPONSABILIDADE • ARTS. 85 E 86',
+      title: 'Rito do Impeachment e Quóruns Constitucionais',
+      items: [
+        'Petição de denúncia popular apresentada perante a Mesa da Câmara dos Deputados',
+        'Juízo monocrático preliminar do Presidente da Câmara recebendo o pedido',
+        'Autorização política pela Câmara dos Deputados por 2/3 dos votos (342 deputados)',
+        'Instauração pelo Plenário do Senado Federal (afastamento cautelar por até 180 dias)',
+        'Sessão solene de julgamento presidida pelo Presidente do Supremo Tribunal Federal (STF)',
+        'Condenação por 2/3 dos votos do Senado (54 senadores): Perda do cargo + Inabilitação por 8 anos',
+      ],
+      legalNote: 'CF/88, art. 52, parágrafo único: A condenação importa a perda do cargo com inabilitação por 8 anos para o exercício de função pública, sem prejuízo das sanções civis e penais cabíveis.',
+    },
+    card4: {
+      number: '04',
+      eyebrow: 'PAPEL ESTRATÉGICO • ARTS. 51, 80 E 86',
+      title: 'O Presidente da Câmara dos Deputados na Crise Institucional',
+      noteLines: [
+        '• 1º na ordem de substituição legal: Na falta de Vice, é quem assume de imediato a chefia do Poder Executivo em caso de impedimento ou vacância.',
+        '• Guardião da admissibilidade: É autoridade competente exclusiva para decidir pelo recebimento ou arquivamento preliminar de pedidos de impeachment contra o Presidente da República.',
+        '• Função transitória: Sua assunção interina não prorroga seu poder no Executivo; tem o dever indeclinável de conduzir a transição e a convocação das eleições constitucionais do art. 81.',
+      ],
+      promptBox: 'Destaque para Provas e Concursos: O Presidente da Câmara, do Senado e do STF NUNCA sucedem definitivamente o Presidente da República; eles apenas substituem de forma precária e transitória.',
+    },
+    card5: {
+      number: '05',
+      eyebrow: 'PRAZOS & DESFECHOS • ARTS. 81, 85 E 86',
+      title: 'Prazos Constitucionais e Quadro Sinóptico',
+      body: 'Síntese das balizas temporais e dos reflexos na estrutura governamental brasileira em caso de crise e vacância no Poder Executivo.',
+      deadlines: [
+        { label: '180 dias', text: 'Prazo máximo do afastamento preventivo do Presidente durante processo no Senado Federal' },
+        { label: '90 dias', text: 'Prazo para convocação de eleição direta em caso de dupla vacância nos 2 primeiros anos' },
+        { label: '30 dias', text: 'Prazo para eleição indireta pelo Congresso Nacional em caso de dupla vacância nos 2 últimos anos' },
+      ],
+      outcomes: [
+        { actor: 'Impeachment Aprovado', action: 'Vice-Presidente assume em definitivo como Chefe de Estado e de Governo' },
+        { actor: 'Dupla Vacância', action: 'Presidente da Câmara assume provisoriamente e comanda a transição eleitoral' },
+        { actor: 'Impeachment Rejeitado', action: 'Presidente afastado reassume imediatamente suas funções' },
+      ],
+    },
+  },
+  customNotes: [
+    {
+      id: 'note-presidencia-01',
+      number: '01',
+      title: 'Linha Sucessória vs Linha de Substituição (CF/88, Arts. 79 e 80)',
+      body: 'Diferença dogmática essencial: SUCESSÃO é definitiva; SUBSTITUIÇÃO é provisória e precária. O Vice-Presidente da República é a ÚNICA figura constitucional que SUCEDE o Presidente em definitivo (assume a titularidade em caso de renúncia, morte ou impeachment). Havendo vacância ou impedimento de ambos (dupla vacância), os chefes dos Poderes Legislativo e Judiciário são convocados em ordem sucessiva: 1º Presidente da Câmara dos Deputados (representante do povo); 2º Presidente do Senado Federal (representante dos Estados/DF); 3º Presidente do Supremo Tribunal Federal (chefe do Poder Judiciário). Esses três líderes exercem a presidência APENAS INTERINAMENTE, jamais se tornando titulares definitivos do mandato.',
+    },
+    {
+      id: 'note-presidencia-02',
+      number: '02',
+      title: 'Dupla Vacância e Eleições Presidenciais: Diretas (90 dias) vs Indiretas (30 dias) e Mandato-Tampão',
+      body: 'O art. 81 da CF/88 disciplina a situação em que vagam os dois cargos do Executivo Federal. O critério definidor é estritamente temporal:\n1) Nos 2 PRIMEIROS ANOS de mandato: convocam-se ELEIÇÕES DIRETAS para que todo o eleitorado nacional vote no prazo de 90 dias após aberta a última vaga.\n2) Nos 2 ÚLTIMOS ANOS de mandato: realiza-se ELEIÇÃO INDIRETA pelos membros do Congresso Nacional (Câmara e Senado em sessão conjunta) no prazo de 30 dias após aberta a última vaga.\n3) Em ambas as hipóteses vigora a regra do Mandato-Tampão (§ 2º): os mandatários eleitos não iniciam um novo quadriênio de governo, mas tão somente cumprem o restante do tempo que faltava para os governantes anteriores.',
+    },
+    {
+      id: 'note-presidencia-03',
+      number: '03',
+      title: 'O Rito do Impeachment e as Competências do Presidente da Câmara e do Presidente do STF',
+      body: 'Nos crimes de responsabilidade (art. 85 da CF/88 e Lei 1.079/50), a competência é compartilhada:\n• Presidente da Câmara dos Deputados: detém o juízo unipessoal de admissibilidade formal e política sobre dar andamento ou arquivar a denúncia popular.\n• Câmara dos Deputados: delibera no Plenário pela admissibilidade mediante quórum qualificado de 2/3 (342 deputados federais).\n• Senado Federal: órgão com competência privativa para instaurar o processo (momento em que o Presidente é afastado preventivamente por até 180 dias, período em que o Vice assume provisoriamente) e para proferir o julgamento definitivo.\n• Presidente do STF: preside obrigatoriamente a sessão de julgamento no Senado (art. 52, parágrafo único).\n• Quórum de condenação: 2/3 dos votos do Senado (54 senadores). Se condenado, impõe-se a pena constitucional de perda do mandato acumulada com a inabilitação por 8 anos para o exercício de qualquer função pública.',
+    },
+  ],
+};
+
+sampleTopics['presidencia-republica-07'] = presidenciaRepublicaDocument;
+

@@ -424,7 +424,7 @@ export const GeminiDrawer: React.FC<GeminiDrawerProps> = ({
                   onChange={(e) => setInputPrompt(e.target.value)}
                   placeholder={`Pergunte sobre ${currentTitle} ou peça um esquema...`}
                   disabled={loading}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-[#f7f6f2] dark:bg-[#131720] border border-[#dedbd3] dark:border-[#2b3548] text-[13px] text-[#181d28] dark:text-white placeholder-[#8790a1] focus:outline-hidden focus:border-[#24334a]"
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-[#f7f6f2] dark:bg-[#131720] border border-[#dedbd3] dark:border-[#2b3548] text-[16px] sm:text-[13px] text-[#181d28] dark:text-white placeholder-[#8790a1] focus:outline-hidden focus:border-[#24334a]"
                 />
                 <button
                   type="submit"

@@ -73,7 +73,7 @@ export const CustomNotesSection: React.FC<CustomNotesSectionProps> = ({
               contentEditable
               suppressContentEditableWarning
               onBlur={(e) => onUpdateNote(note.id, { body: e.currentTarget.textContent || note.body })}
-              className="text-[13px] text-[#4d5464] dark:text-[#9ea8bc] leading-relaxed flex-1 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
+              className="text-[16px] sm:text-[13px] text-[#4d5464] dark:text-[#9ea8bc] leading-relaxed flex-1 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
             >
               {note.body}
             </div>

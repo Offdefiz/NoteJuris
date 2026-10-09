@@ -546,7 +546,7 @@ Artigo: [Artigo CPP/CP/CF correspondente]
                     value={newFront}
                     onChange={(e) => setNewFront(e.target.value)}
                     placeholder="Ex: Qual o prazo da denúncia quando o réu estiver solto?"
-                    className="w-full px-3 py-2 text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
+                    className="w-full px-3 py-2 text-[16px] sm:text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
                   />
                 </div>
 
@@ -560,7 +560,7 @@ Artigo: [Artigo CPP/CP/CF correspondente]
                     value={newBack}
                     onChange={(e) => setNewBack(e.target.value)}
                     placeholder="Ex: 15 dias, prorrogáveis a critério judicial (CPP, art. 46)."
-                    className="w-full px-3 py-2 text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
+                    className="w-full px-3 py-2 text-[16px] sm:text-[13px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
                   />
                 </div>
 
@@ -574,7 +574,7 @@ Artigo: [Artigo CPP/CP/CF correspondente]
                       value={newArticle}
                       onChange={(e) => setNewArticle(e.target.value)}
                       placeholder="Ex: CPP, art. 46"
-                      className="w-full px-3 py-1.5 text-[12px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
+                      className="w-full px-3 py-1.5 text-[16px] sm:text-[12px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
                     />
                   </div>
                   <div>
@@ -586,7 +586,7 @@ Artigo: [Artigo CPP/CP/CF correspondente]
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
                       placeholder="Ex: Prazos, Conceito"
-                      className="w-full px-3 py-1.5 text-[12px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
+                      className="w-full px-3 py-1.5 text-[16px] sm:text-[12px] rounded-xl bg-[#f8f7f4] dark:bg-[#121620] border border-[#dedbd3] dark:border-[#293347] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#385b88]"
                     />
                   </div>
                 </div>

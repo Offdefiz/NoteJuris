@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { initialNotebook, defaultDisciplines } from './data/initialData';
+import { initialNotebook, defaultDisciplines, sampleTopics, presidenciaRepublicaDocument } from './data/initialData';
 import { NotebookDocument, LegendType, TimelineItem, NoteBlock, Discipline, TopicItem } from './types/notebook';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -30,7 +30,26 @@ function MainApp() {
     const saved = localStorage.getItem('caderno_juridico_disciplines');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Merge missing default topics like presidencia-republica-07
+          const updated = defaultDisciplines.map((def) => {
+            const existing = parsed.find((p: any) => p.id === def.id);
+            if (!existing) return def;
+            const existingTopicIds = new Set(existing.topics.map((t: any) => t.id));
+            const missingTopics = def.topics.filter((t) => !existingTopicIds.has(t.id));
+            return {
+              ...existing,
+              topics: [...existing.topics, ...missingTopics],
+            };
+          });
+          parsed.forEach((p: any) => {
+            if (!updated.some((u) => u.id === p.id)) {
+              updated.push(p);
+            }
+          });
+          return updated;
+        }
       } catch (e) {
         console.error(e);
       }
@@ -89,6 +108,20 @@ function MainApp() {
   useEffect(() => {
     localStorage.setItem('caderno_juridico_disciplines', JSON.stringify(disciplines));
   }, [disciplines]);
+
+  // Pre-seed presidenciaRepublicaDocument to ensure immediate availability
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem('caderno_juridico_doc_presidencia-republica-07')) {
+        localStorage.setItem(
+          'caderno_juridico_doc_presidencia-republica-07',
+          JSON.stringify(presidenciaRepublicaDocument)
+        );
+      }
+    } catch (e) {
+      console.warn('Could not seed local document:', e);
+    }
+  }, []);
 
   // Cloud sync when user logs in (only if Firebase is active)
   useEffect(() => {
@@ -250,6 +283,16 @@ function MainApp() {
         return;
       } catch (e) {
         console.error(e);
+      }
+    }
+
+    // Check if rich pre-defined topic exists (e.g. Presidência da República)
+    if (sampleTopics[topicId]) {
+      const predefined = sampleTopics[topicId] as NotebookDocument;
+      if (predefined.flow && predefined.timelineItems) {
+        setDocumentData(predefined);
+        triggerSave(predefined);
+        return;
       }
     }
 

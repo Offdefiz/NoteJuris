@@ -152,7 +152,7 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
                     contentEditable
                     suppressContentEditableWarning
                     onBlur={(e) => onUpdateItem(item.id, { article: e.currentTarget.textContent || item.article })}
-                    className="text-[11px] font-semibold text-[#876735] dark:text-[#d4aa5d] tracking-wide block mb-1 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1"
+                    className="text-[16px] md:text-[11px] font-semibold text-[#876735] dark:text-[#d4aa5d] tracking-wide block mb-1 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1"
                   >
                     {item.article}
                   </span>
@@ -172,7 +172,7 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
                     contentEditable
                     suppressContentEditableWarning
                     onBlur={(e) => onUpdateItem(item.id, { detail: e.currentTarget.textContent || item.detail })}
-                    className="text-[12px] text-[#4f5666] dark:text-[#9ea8bc] leading-relaxed mb-4 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
+                    className="text-[16px] md:text-[12px] text-[#4f5666] dark:text-[#9ea8bc] leading-relaxed mb-4 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
                   >
                     {item.detail}
                   </div>
@@ -189,7 +189,7 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
                       suppressContentEditableWarning
                       onBlur={(e) => onUpdateItem(item.id, { notes: e.currentTarget.textContent || '' })}
                       data-placeholder="Clique para adicionar os detalhes explicados pelo professor..."
-                      className={`text-[12px] leading-relaxed p-2.5 rounded-xl bg-[#fbfaf8] dark:bg-[#131720] border border-[#ece8de] dark:border-[#222938] focus:outline-hidden focus:border-[#2d3b53] dark:focus:border-[#60a5fa] cursor-text min-h-[46px] ${
+                      className={`text-[16px] md:text-[12px] leading-relaxed p-2.5 rounded-xl bg-[#fbfaf8] dark:bg-[#131720] border border-[#ece8de] dark:border-[#222938] focus:outline-hidden focus:border-[#2d3b53] dark:focus:border-[#60a5fa] cursor-text min-h-[46px] ${
                         !item.notes
                           ? 'text-[#9fa6b5] dark:text-[#5e677c] italic'
                           : 'text-[#2a303d] dark:text-[#c7d0e0]'

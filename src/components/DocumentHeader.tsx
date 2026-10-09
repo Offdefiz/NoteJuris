@@ -91,7 +91,7 @@ export const DocumentHeader: React.FC<DocumentHeaderProps> = ({
               onBlur={handleSubtitleBlur}
               onKeyDown={(e) => e.key === 'Enter' && handleSubtitleBlur()}
               autoFocus
-              className="w-full text-[14px] sm:text-[15px] text-[#4d5566] dark:text-[#a0abbd] bg-transparent border-b border-[#2b3547] dark:border-[#60a5fa] focus:outline-hidden py-1"
+              className="w-full text-[16px] sm:text-[15px] text-[#4d5566] dark:text-[#a0abbd] bg-transparent border-b border-[#2b3547] dark:border-[#60a5fa] focus:outline-hidden py-1"
             />
           ) : (
             <p
