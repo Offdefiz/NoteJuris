@@ -97,6 +97,30 @@ export const AiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     return headers;
   }, [apiKey]);
 
+  const fetchWithRetry = useCallback(async (
+    url: string,
+    options: RequestInit,
+    retries = 3,
+    delay = 2000
+  ): Promise<Response> => {
+    try {
+      const res = await fetch(url, options);
+      if (retries > 0 && res.status === 503) {
+        console.warn(`[Client Retry] Status 503 recebido de ${url}. Tentando novamente em ${delay}ms... (Restam ${retries})`);
+        await new Promise((r) => setTimeout(r, delay));
+        return fetchWithRetry(url, options, retries - 1, delay * 2);
+      }
+      return res;
+    } catch (err: any) {
+      if (retries > 0) {
+        console.warn(`[Client Retry] Falha de conexão com ${url}. Tentando em ${delay}ms... (Restam ${retries})`);
+        await new Promise((r) => setTimeout(r, delay));
+        return fetchWithRetry(url, options, retries - 1, delay * 2);
+      }
+      throw err;
+    }
+  }, []);
+
   const testApiKey = useCallback(async (keyToTest?: string): Promise<{ success: boolean; message: string }> => {
     const targetKey = (keyToTest !== undefined ? keyToTest : apiKey).trim();
     if (!targetKey) {
@@ -107,7 +131,7 @@ export const AiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     }
 
     try {
-      const res = await fetch('/api/gemini/validate-key', {
+      const res = await fetchWithRetry('/api/gemini/validate-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: targetKey }),
@@ -129,14 +153,14 @@ export const AiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         message: err.message || 'Falha ao conectar com o serviço de validação.',
       };
     }
-  }, [apiKey]);
+  }, [apiKey, fetchWithRetry]);
 
   const askAiAssistant = useCallback(async (params: {
     prompt: string;
     currentTitle: string;
     discipline: string;
   }) => {
-    const res = await fetch('/api/gemini/assist', {
+    const res = await fetchWithRetry('/api/gemini/assist', {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({
@@ -156,7 +180,7 @@ export const AiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       text: data.text || '',
       isOffline: Boolean(data.isOfflineMode),
     };
-  }, [apiKey, isOfflineMode, getAuthHeaders]);
+  }, [apiKey, isOfflineMode, getAuthHeaders, fetchWithRetry]);
 
   const generateAiFlashcards = useCallback(async (params: {
     currentTitle: string;
@@ -164,7 +188,7 @@ export const AiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     count?: number;
     notesContext?: string;
   }) => {
-    const res = await fetch('/api/gemini/flashcards', {
+    const res = await fetchWithRetry('/api/gemini/flashcards', {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({
@@ -185,7 +209,7 @@ export const AiProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       cards: data.cards || [],
       isOffline: Boolean(data.isOfflineMode),
     };
-  }, [apiKey, isOfflineMode, getAuthHeaders]);
+  }, [apiKey, isOfflineMode, getAuthHeaders, fetchWithRetry]);
 
   const isKeyConfigured = (!isOfflineMode && Boolean(apiKey.trim() || hasServerKey));
 

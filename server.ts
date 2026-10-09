@@ -113,6 +113,44 @@ function generateOfflineLegalResponse(prompt: string, currentTitle: string, disc
   };
 }
 
+/**
+ * Executes a Gemini API call with exponential backoff retry.
+ * Minimizes transient 503 (Service Unavailable / high demand) and 429 errors.
+ */
+async function callGeminiWithRetry<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  delay = 2000
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    const status = error?.status || error?.statusCode || error?.response?.status;
+    const msg = (error?.message || '').toLowerCase();
+
+    const isTransient =
+      status === 503 ||
+      status === 429 ||
+      msg.includes('503') ||
+      msg.includes('high demand') ||
+      msg.includes('overloaded') ||
+      msg.includes('unavailable') ||
+      msg.includes('resource_exhausted') ||
+      msg.includes('rate limit') ||
+      msg.includes('temporarily unavailable') ||
+      msg.includes('temporarily unable');
+
+    if (retries > 0 && isTransient) {
+      console.warn(
+        `[Gemini Retry] Erro 503 / alta demanda detectado (${status || 'transiente'}). Aguardando ${delay}ms para retentar... (Tentativas restantes: ${retries})`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return callGeminiWithRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
 // Endpoint: Validate Google Gemini API Key
 app.post('/api/gemini/validate-key', async (req, res) => {
   try {
@@ -135,10 +173,12 @@ app.post('/api/gemini/validate-key', async (req, res) => {
       },
     });
 
-    const response = await aiClient.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: 'Responda apenas "OK" para teste de conexão.',
-    });
+    const response = await callGeminiWithRetry(() =>
+      aiClient.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: 'Responda apenas "OK" para teste de conexão.',
+      })
+    );
 
     const reply = response.text || '';
     if (reply) {
@@ -182,7 +222,7 @@ app.post('/api/gemini/assist', async (req, res) => {
       });
     }
 
-    // When an API key is present, execute via official Google GenAI SDK
+    // When an API key is present, execute via official Google GenAI SDK with retry
     try {
       const aiClient = new GoogleGenAI({
         apiKey: activeApiKey,
@@ -206,14 +246,16 @@ ${prompt}
 
 Responda em formato claro em Português do Brasil com explicações diretas e artigos de lei.`;
 
-      const response = await aiClient.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: fullPrompt,
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-        },
-      });
+      const response = await callGeminiWithRetry(() =>
+        aiClient.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: fullPrompt,
+          config: {
+            systemInstruction,
+            temperature: 0.7,
+          },
+        })
+      );
 
       const text = response.text || 'Nenhuma resposta gerada.';
       return res.json({
@@ -222,7 +264,7 @@ Responda em formato claro em Português do Brasil com explicações diretas e ar
         isOfflineMode: false,
       });
     } catch (genError: any) {
-      console.warn('Gemini API call failed, falling back to local legal template engine:', genError.message);
+      console.warn('Gemini API call failed after retries, falling back to local legal template engine:', genError.message);
       const fallback = generateOfflineLegalResponse(prompt, currentTitle || 'Geral', discipline || 'Direito');
       return res.json({
         success: true,
@@ -287,13 +329,15 @@ ARTIGO: [artigo de lei exato, ex: CPP, art. 10 ou CF/88, art. 5º, LV]
 CATEGORIA: [ex: Conceito, Prazos, Competência, Jurisprudência]
 CARD_END`;
 
-      const response = await aiClient.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: {
-          temperature: 0.4,
-        },
-      });
+      const response = await callGeminiWithRetry(() =>
+        aiClient.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: prompt,
+          config: {
+            temperature: 0.4,
+          },
+        })
+      );
 
       const rawText = response.text || '';
       const cards: Array<{ front: string; back: string; article: string; category: string }> = [];
