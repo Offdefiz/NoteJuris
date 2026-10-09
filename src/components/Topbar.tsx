@@ -10,7 +10,8 @@ import {
   User as UserIcon,
   Sparkles,
   Plus,
-  Key
+  Key,
+  Scale
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -27,6 +28,7 @@ interface TopbarProps {
   onOpenGemini: () => void;
   onOpenCreateTopic: () => void;
   onOpenFlashcards: () => void;
+  onOpenDocAnalysis: () => void;
   onOpenMobileSidebar: () => void;
 }
 
@@ -41,6 +43,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   onOpenGemini,
   onOpenCreateTopic,
   onOpenFlashcards,
+  onOpenDocAnalysis,
   onOpenMobileSidebar,
 }) => {
   const { user, profile } = useAuth();
@@ -83,6 +86,17 @@ export const Topbar: React.FC<TopbarProps> = ({
         >
           <span className="text-sm">🗂️</span>
           <span className="hidden sm:inline">Flashcards</span>
+        </button>
+
+        {/* OpenAI Legal Document Analysis Button */}
+        <button
+          onClick={onOpenDocAnalysis}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/70 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-[12px] font-semibold text-emerald-900 dark:text-emerald-200 transition-all shadow-2xs active:scale-[0.98]"
+          title="Análise de Processos e Peças Jurídicas (OpenAI gpt-4o-mini)"
+        >
+          <Scale className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span className="hidden sm:inline">Analisar Peça</span>
+          <span className="sm:hidden">Peça</span>
         </button>
 
         {/* Gemini Trigger Button */}

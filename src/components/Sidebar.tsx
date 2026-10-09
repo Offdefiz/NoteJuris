@@ -18,7 +18,8 @@ import {
   Plus,
   FileText,
   FolderPlus,
-  Key
+  Key,
+  Scale
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -35,6 +36,7 @@ interface SidebarProps {
   onOpenAuth: () => void;
   onOpenGemini: () => void;
   onOpenFlashcards: () => void;
+  onOpenDocAnalysis?: () => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
 }
@@ -49,6 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenAuth,
   onOpenGemini,
   onOpenFlashcards,
+  onOpenDocAnalysis,
   isOpenMobile,
   onCloseMobile,
 }) => {
@@ -140,6 +143,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
               Novo
+            </span>
+          </button>
+        </div>
+
+        {/* OpenAI Legal Document Analysis Card */}
+        <div className="px-3 pt-2">
+          <button
+            onClick={() => {
+              if (onOpenDocAnalysis) onOpenDocAnalysis();
+              onCloseMobile();
+            }}
+            className="flex items-center justify-between w-full p-2.5 rounded-xl bg-gradient-to-r from-emerald-900/10 via-teal-900/10 to-emerald-900/5 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/60 hover:border-emerald-400 dark:hover:border-emerald-700 text-left transition-all group shadow-2xs"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-700 dark:bg-emerald-600 text-white shadow-xs">
+                <Scale className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <span className="text-[12px] font-bold text-emerald-900 dark:text-emerald-300 block leading-tight">
+                  Análise de Peças
+                </span>
+                <span className="text-[10px] text-[#64748b] dark:text-[#94a3b8]">
+                  PDFs & autos via gpt-4o-mini
+                </span>
+              </div>
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
+              OpenAI
             </span>
           </button>
         </div>

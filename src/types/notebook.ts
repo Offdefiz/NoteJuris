@@ -122,3 +122,33 @@ export interface NotebookDocument {
   customNotes: NoteBlock[];
   lastSavedAt?: string;
 }
+
+export interface LegalDocumentParties {
+  poloAtivo: string[];
+  poloPassivo: string[];
+  terceiros: string[];
+}
+
+export interface LegalDocumentAnalysis {
+  id: string;
+  fileName: string;
+  analyzedAt: string;
+  modelUsed: string;
+  isOfflineFallback: boolean;
+  resumoExecutivo: string;
+  partes: LegalDocumentParties;
+  objeto: string;
+  pedidos: string[];
+  fatosRelevantes: string[];
+  decisoes: string[];
+  provas: string[];
+  inconsistencias: string[];
+  fundamentosJuridicos: string[];
+  providenciasSugeridas: string[];
+  alertasValidacao: string[];
+  tokensUsage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+  };
+}

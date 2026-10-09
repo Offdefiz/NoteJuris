@@ -18,6 +18,7 @@ import { ShareModal } from './components/ShareModal';
 import { GeminiDrawer } from './components/GeminiDrawer';
 import { CreateModal } from './components/CreateModal';
 import { FlashcardsModal } from './components/FlashcardsModal';
+import { DocumentAnalysisModal } from './components/DocumentAnalysisModal';
 import { AiConfigModal } from './components/AiConfigModal';
 import { BottomNav } from './components/BottomNav';
 import { MobileDisciplinesSheet } from './components/MobileDisciplinesSheet';
@@ -86,6 +87,7 @@ function MainApp() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isGeminiOpen, setIsGeminiOpen] = useState(false);
   const [isFlashcardsOpen, setIsFlashcardsOpen] = useState(false);
+  const [isDocAnalysisOpen, setIsDocAnalysisOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createModalMode, setCreateModalMode] = useState<'discipline' | 'topic'>('topic');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -499,6 +501,7 @@ function MainApp() {
         onOpenAuth={() => setIsAuthOpen(true)}
         onOpenGemini={() => setIsGeminiOpen(true)}
         onOpenFlashcards={() => setIsFlashcardsOpen(true)}
+        onOpenDocAnalysis={() => setIsDocAnalysisOpen(true)}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
@@ -519,6 +522,7 @@ function MainApp() {
             setIsCreateModalOpen(true);
           }}
           onOpenFlashcards={() => setIsFlashcardsOpen(true)}
+          onOpenDocAnalysis={() => setIsDocAnalysisOpen(true)}
           onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
         />
 
@@ -692,6 +696,25 @@ function MainApp() {
         isOpen={isFlashcardsOpen}
         onClose={() => setIsFlashcardsOpen(false)}
         document={documentData}
+      />
+
+      {/* OpenAI Legal Document Analysis Modal */}
+      <DocumentAnalysisModal
+        isOpen={isDocAnalysisOpen}
+        onClose={() => setIsDocAnalysisOpen(false)}
+        onInsertAsNoteBlock={(title, body) => {
+          const nextNum = String(documentData.customNotes.length + 1).padStart(2, '0');
+          const newBlock: NoteBlock = {
+            id: `note-${Date.now()}`,
+            number: nextNum,
+            title,
+            body,
+          };
+          updateDoc((prev) => ({
+            ...prev,
+            customNotes: [...prev.customNotes, newBlock],
+          }));
+        }}
       />
 
       {/* Universal Google Gemini API Key Configuration Modal */}

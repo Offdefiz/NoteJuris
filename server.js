@@ -5,7 +5,18 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
+import mammoth from "mammoth";
+import { createRequire } from "module";
 dotenv.config();
+var require2 = createRequire(import.meta.url);
+var pdfModule = require2("pdf-parse");
+var PDFParse = pdfModule.PDFParse || pdfModule;
+var OPENAI_CONFIG = {
+  model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+  temperature: 0.1,
+  maxTokens: 3500
+};
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path.dirname(__filename);
 var app = express();
@@ -26,6 +37,8 @@ app.get("/api/status", (req, res) => {
     appName: "Caderno Jur\xEDdico",
     independent: true,
     hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
+    hasOpenAiKey: Boolean(process.env.OPENAI_API_KEY),
+    openAiModel: OPENAI_CONFIG.model,
     port: PORT,
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
@@ -155,14 +168,31 @@ Revise os informativos recentes publicados sobre ${discipline || "a disciplina"}
 *(Modo servidor local ativo)*`
   };
 }
+async function callGeminiWithRetry(fn, retries = 3, delay = 2e3) {
+  try {
+    return await fn();
+  } catch (error) {
+    const status = error?.status || error?.statusCode || error?.response?.status;
+    const msg = (error?.message || "").toLowerCase();
+    const isTransient = status === 503 || status === 429 || msg.includes("503") || msg.includes("high demand") || msg.includes("overloaded") || msg.includes("unavailable") || msg.includes("resource_exhausted") || msg.includes("rate limit") || msg.includes("temporarily unavailable") || msg.includes("temporarily unable");
+    if (retries > 0 && isTransient) {
+      console.warn(
+        `[Gemini Retry] Erro 503 / alta demanda detectado (${status || "transiente"}). Aguardando ${delay}ms para retentar... (Tentativas restantes: ${retries})`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return callGeminiWithRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
 app.post("/api/gemini/validate-key", async (req, res) => {
   try {
     const { apiKey } = req.body;
-    const testKey = (apiKey || req.headers["x-gemini-key"] || process.env.GEMINI_API_KEY || "").toString().trim();
+    const testKey = (apiKey ? apiKey : req.headers["x-gemini-key"] || "").toString().trim();
     if (!testKey) {
       return res.status(400).json({
         valid: false,
-        error: "Nenhuma chave fornecida para teste."
+        error: "Nenhuma chave Google Gemini informada para teste. Digite sua chave."
       });
     }
     const aiClient = new GoogleGenAI({
@@ -173,10 +203,12 @@ app.post("/api/gemini/validate-key", async (req, res) => {
         }
       }
     });
-    const response = await aiClient.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: 'Responda apenas "OK" para teste de conex\xE3o.'
-    });
+    const response = await callGeminiWithRetry(
+      () => aiClient.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents: 'Responda apenas "OK" para teste de conex\xE3o.'
+      })
+    );
     const reply = response.text || "";
     if (reply) {
       return res.json({
@@ -231,14 +263,16 @@ Solicita\xE7\xE3o do Estudante:
 ${prompt}
 
 Responda em formato claro em Portugu\xEAs do Brasil com explica\xE7\xF5es diretas e artigos de lei.`;
-      const response = await aiClient.models.generateContent({
-        model: "gemini-3.8-flash",
-        contents: fullPrompt,
-        config: {
-          systemInstruction,
-          temperature: 0.7
-        }
-      });
+      const response = await callGeminiWithRetry(
+        () => aiClient.models.generateContent({
+          model: "gemini-3.8-flash",
+          contents: fullPrompt,
+          config: {
+            systemInstruction,
+            temperature: 0.7
+          }
+        })
+      );
       const text = response.text || "Nenhuma resposta gerada.";
       return res.json({
         success: true,
@@ -246,7 +280,7 @@ Responda em formato claro em Portugu\xEAs do Brasil com explica\xE7\xF5es direta
         isOfflineMode: false
       });
     } catch (genError) {
-      console.warn("Gemini API call failed, falling back to local legal template engine:", genError.message);
+      console.warn("Gemini API call failed after retries, falling back to local legal template engine:", genError.message);
       const fallback = generateOfflineLegalResponse(prompt, currentTitle || "Geral", discipline || "Direito");
       return res.json({
         success: true,
@@ -306,13 +340,15 @@ RESPOSTA: [resposta fundamentada na doutrina e jurisprud\xEAncia]
 ARTIGO: [artigo de lei exato, ex: CPP, art. 10 ou CF/88, art. 5\xBA, LV]
 CATEGORIA: [ex: Conceito, Prazos, Compet\xEAncia, Jurisprud\xEAncia]
 CARD_END`;
-      const response = await aiClient.models.generateContent({
-        model: "gemini-3.8-flash",
-        contents: prompt,
-        config: {
-          temperature: 0.4
-        }
-      });
+      const response = await callGeminiWithRetry(
+        () => aiClient.models.generateContent({
+          model: "gemini-3.8-flash",
+          contents: prompt,
+          config: {
+            temperature: 0.4
+          }
+        })
+      );
       const rawText = response.text || "";
       const cards = [];
       const blocks = rawText.split("CARD_START");
@@ -362,6 +398,285 @@ CARD_END`;
   } catch (error) {
     console.error("Flashcards API Error:", error);
     return res.status(500).json({ error: error.message });
+  }
+});
+async function callOpenAiWithLimitedRetry(fn, retries = 1, delay = 2e3) {
+  try {
+    return await fn();
+  } catch (error) {
+    const status = error?.status || error?.statusCode;
+    const msg = (error?.message || "").toLowerCase();
+    const isTransient = status === 503 || status === 429 || status === 500 || msg.includes("rate limit") || msg.includes("overloaded") || msg.includes("temporarily unavailable");
+    if (retries > 0 && isTransient) {
+      console.warn(
+        `[OpenAI Retry] Erro transit\xF3rio detectado (${status || "indispon\xEDvel"}). Aguardando ${delay}ms para 1 retentativa controlada...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return callOpenAiWithLimitedRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+async function extractTextFromBuffer(buffer, fileName, mimeType) {
+  const lowerName = fileName.toLowerCase();
+  const lowerMime = (mimeType || "").toLowerCase();
+  if (lowerName.endsWith(".pdf") || lowerMime.includes("pdf")) {
+    const parser = new PDFParse({ data: buffer });
+    try {
+      const parsed = await parser.getText();
+      return parsed.text || "";
+    } finally {
+      try {
+        await parser.destroy();
+      } catch {
+      }
+    }
+  }
+  if (lowerName.endsWith(".docx") || lowerMime.includes("wordprocessingml") || lowerMime.includes("docx")) {
+    const docxResult = await mammoth.extractRawText({ buffer });
+    return docxResult.value || "";
+  }
+  return buffer.toString("utf-8");
+}
+function generateOfflineDocumentAnalysis(text, fileName, reason) {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const textSample = text.slice(0, 15e3);
+  const articleMatches = Array.from(
+    new Set(
+      Array.from(
+        textSample.matchAll(/(?:art(?:igo|\.)?\s*\d+[\wº\-\.]*|lei\s*(?:n[ºo\.]?)?\s*[\d\.\/]+|cf\/88|cpc|cpp|cp|clt)/gi)
+      ).map((m) => m[0].toUpperCase())
+    )
+  ).slice(0, 8);
+  const autorMatch = textSample.match(/(?:autor|requerente|exequente|agravante|apelante|impetrante)\s*[:\-]?\s*([^\n\r,\.;]+)/i);
+  const reuMatch = textSample.match(/(?:r[ée]u|requerido|executado|agravado|apelado|impetrado)\s*[:\-]?\s*([^\n\r,\.;]+)/i);
+  return {
+    id: `offline-analysis-${Date.now()}`,
+    fileName,
+    analyzedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    modelUsed: "offline-local-heuristic",
+    isOfflineFallback: true,
+    resumoExecutivo: `Documento "${fileName}" processado localmente em modo aut\xF4nomo offline (${reason}). Foram identificadas aproximadamente ${lines.length} linhas de conte\xFAdo textual. Para an\xE1lise sem\xE2ntica profunda via IA, configure a vari\xE1vel OPENAI_API_KEY no ambiente do servidor.`,
+    partes: {
+      poloAtivo: autorMatch ? [autorMatch[1].trim()] : ["[N\xE3o identificado explicitamente nos trechos analisados]"],
+      poloPassivo: reuMatch ? [reuMatch[1].trim()] : ["[N\xE3o identificado explicitamente nos trechos analisados]"],
+      terceiros: ["[N\xE3o informado expressamente no documento]"]
+    },
+    objeto: lines.find((l) => /ação|pedido|mandado|habeas|recurso|requerimento/i.test(l)) || "[Objeto n\xE3o discriminado em linha direta; requer confer\xEAncia t\xE9cnica]",
+    pedidos: [
+      'An\xE1lise em modo offline local: localize a se\xE7\xE3o final "Dos Pedidos" no texto original.',
+      "Sinaliza\xE7\xE3o: conclus\xF5es dependem de valida\xE7\xE3o presencial por advogado habilitado."
+    ],
+    fatosRelevantes: lines.slice(0, 5).map((l) => l.slice(0, 160)),
+    decisoes: ["[N\xE3o identificado provimento judicial nos cabe\xE7alhos; verifique dispositivo final]"],
+    provas: ["[Documentos e anexos referenciados nos autos; consultar pe\xE7as instrut\xF3rias]"],
+    inconsistencias: [
+      "Processamento em modo offline: verifica\xE7\xE3o sem\xE2ntica de diverg\xEAncias requer API OpenAI conectada."
+    ],
+    fundamentosJuridicos: articleMatches.length > 0 ? articleMatches : ["[Dispositivos legais identificados dependem de confer\xEAncia dos autos integrais]"],
+    providenciasSugeridas: [
+      "Conferir prazos processuais no di\xE1rio oficial ou sistema eletr\xF4nico do tribunal.",
+      "Validar tempestividade e procura\xE7\xE3o com poderes espec\xEDficos nos autos.",
+      "Submeter relat\xF3rio \xE0 confer\xEAncia formal de profissional do Direito."
+    ],
+    alertasValidacao: [
+      "ATEN\xC7\xC3O: An\xE1lise gerada pelo motor de conting\xEAncia offline local do NoteJuris.",
+      "N\xE3o substitui a consulta nem a an\xE1lise t\xE9cnica por advogado devidamente inscrito na OAB.",
+      "Informa\xE7\xF5es ausentes n\xE3o foram presumidas nem inventadas."
+    ],
+    tokensUsage: {
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0
+    }
+  };
+}
+app.get("/api/openai/status", (req, res) => {
+  res.json({
+    status: "online",
+    hasKey: Boolean(process.env.OPENAI_API_KEY),
+    model: OPENAI_CONFIG.model,
+    maxTokens: OPENAI_CONFIG.maxTokens,
+    temperature: OPENAI_CONFIG.temperature,
+    supportedFormats: ["pdf", "docx", "txt", "md"],
+    maxFileSizeMb: 15
+  });
+});
+app.post("/api/openai/analyze-document", async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const authHeader = req.headers.authorization;
+    const userIdHeader = req.headers["x-user-id"];
+    const clientSession = req.headers["x-client-session"];
+    const isAuthenticated = Boolean(
+      authHeader && authHeader.startsWith("Bearer ") || userIdHeader || clientSession
+    );
+    if (!isAuthenticated) {
+      return res.status(401).json({
+        error: "Acesso n\xE3o autorizado. \xC9 necess\xE1rio estar autenticado para realizar a an\xE1lise de documentos jur\xEDdicos."
+      });
+    }
+    const { fileName, fileType, fileData, text, forceOffline } = req.body;
+    if (!text && !fileData) {
+      return res.status(400).json({
+        error: "Nenhum documento ou texto fornecido para an\xE1lise. Envie um arquivo PDF, DOCX, TXT ou insira o texto."
+      });
+    }
+    const cleanFileName = (fileName || "documento-juridico.txt").toString().slice(0, 120);
+    let extractedText = "";
+    let rawFileSize = 0;
+    if (fileData) {
+      const base64Data = fileData.includes(",") ? fileData.split(",")[1] : fileData;
+      const fileBuffer = Buffer.from(base64Data, "base64");
+      rawFileSize = fileBuffer.length;
+      const MAX_FILE_SIZE = 15 * 1024 * 1024;
+      if (rawFileSize > MAX_FILE_SIZE) {
+        return res.status(400).json({
+          error: `O arquivo enviado (${(rawFileSize / (1024 * 1024)).toFixed(1)} MB) excede o limite m\xE1ximo permitido de 15 MB.`
+        });
+      }
+      try {
+        extractedText = await extractTextFromBuffer(fileBuffer, cleanFileName, fileType);
+      } catch (parseError) {
+        console.error("[Document Extraction Error]: Falha ao extrair texto do arquivo");
+        return res.status(422).json({
+          error: `N\xE3o foi poss\xEDvel extrair o conte\xFAdo do arquivo "${cleanFileName}". Certifique-se de que o arquivo n\xE3o est\xE1 corrompido ou protegido por senha.`
+        });
+      }
+    } else if (text) {
+      extractedText = String(text);
+      rawFileSize = Buffer.byteLength(extractedText, "utf-8");
+    }
+    extractedText = extractedText.trim();
+    if (!extractedText || extractedText.length < 20) {
+      return res.status(400).json({
+        error: "O documento n\xE3o cont\xE9m texto leg\xEDvel suficiente para an\xE1lise (m\xEDnimo de 20 caracteres leg\xEDveis)."
+      });
+    }
+    let textToAnalyze = extractedText;
+    let wasTruncated = false;
+    const MAX_CHARACTERS = 9e4;
+    if (textToAnalyze.length > MAX_CHARACTERS) {
+      wasTruncated = true;
+      textToAnalyze = textToAnalyze.slice(0, 55e3) + "\n\n[... TRECHO INTERMEDI\xC1RIO DO DOCUMENTO SUPRIMIDO PARA CONTROLE DE CONSUMO E CUSTO ...]\n\n" + textToAnalyze.slice(-35e3);
+    }
+    const apiKey = process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.trim() : "";
+    if (!apiKey || forceOffline) {
+      const offlineResult = generateOfflineDocumentAnalysis(
+        textToAnalyze,
+        cleanFileName,
+        !apiKey ? "chave OPENAI_API_KEY n\xE3o configurada no servidor" : "modo offline solicitado"
+      );
+      console.log(
+        `[Document Analysis] Modo offline processado: arquivo="${cleanFileName}", bytes=${rawFileSize}, truncado=${wasTruncated}, tempo=${Date.now() - startTime}ms`
+      );
+      return res.json({
+        success: true,
+        analysis: offlineResult
+      });
+    }
+    const openai = new OpenAI({ apiKey });
+    const systemPrompt = `Voc\xEA \xE9 um perito s\xEAnior em an\xE1lise t\xE9cnica e processual de autos e documentos jur\xEDdicos brasileiros.
+Sua miss\xE3o \xE9 gerar um relat\xF3rio anal\xEDtico estruturado e estritamente fidedigno aos fatos e termos expostos no documento fornecido.
+
+DIRETRIZES DE RIGOR T\xC9CNICO E CONTEN\xC7\xC3O (OBRIGAT\xD3RIAS):
+1. FIDELIDADE ABSOLUTA: Jamais invente ou presuma artigos de lei, n\xFAmeros de processo, jurisprud\xEAncias, s\xFAmulas, datas, p\xE1ginas, nomes ou prazos n\xE3o explicitamente contidos no documento.
+2. INFORMA\xC7\xC3O AUSENTE: Se qualquer elemento (ex.: decis\xE3o interlocut\xF3ria, pedido liminar, provas, prazos, nome de patrono) n\xE3o constar expressamente no texto analisado, registre explicitamente: "[N\xE3o informado no documento]".
+3. INCONSIST\xCANCIAS E CONTRADI\xC7\xD5ES: Identifique potenciais incoer\xEAncias de datas, teses conflitantes, omiss\xF5es de documentos essenciais ou obscuridades apontadas no texto com sobriedade anal\xEDtica.
+4. ALERTA DE VALIDA\xC7\xC3O: Toda conclus\xE3o e provid\xEAncia sugerida possui car\xE1ter informativo e preparat\xF3rio, devendo conter expressamente a ressalva de que depende de valida\xE7\xE3o privativa por advogado ou operador do direito habilitado.
+5. RESPOSTA EM JSON: Responda ESTRITAMENTE em formato JSON v\xE1lido contendo exatamente as chaves abaixo:
+{
+  "resumoExecutivo": "string (resumo sint\xE9tico e neutro do documento)",
+  "partes": {
+    "poloAtivo": ["string"],
+    "poloPassivo": ["string"],
+    "terceiros": ["string"]
+  },
+  "objeto": "string (objeto da lide ou finalidade central da pe\xE7a)",
+  "pedidos": ["string"],
+  "fatosRelevantes": ["string"],
+  "decisoes": ["string"],
+  "provas": ["string"],
+  "inconsistencias": ["string"],
+  "fundamentosJuridicos": ["string"],
+  "providenciasSugeridas": ["string"],
+  "alertasValidacao": ["string"]
+}`;
+    const userPrompt = `Documento Jur\xEDdico Analisado: "${cleanFileName}"
+${wasTruncated ? "(Aviso: Documento extenso; trechos centrais foram condensados mantendo relat\xF3rio e pedidos)" : ""}
+
+CONTE\xDADO DO DOCUMENTO:
+---
+${textToAnalyze}
+---
+
+Gere a an\xE1lise t\xE9cnica completa em conformidade com o formato JSON solicitado.`;
+    const completion = await callOpenAiWithLimitedRetry(
+      () => openai.chat.completions.create({
+        model: OPENAI_CONFIG.model,
+        temperature: OPENAI_CONFIG.temperature,
+        max_tokens: OPENAI_CONFIG.maxTokens,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ]
+      })
+    );
+    const rawResponse = completion.choices[0]?.message?.content || "{}";
+    let parsedJson = {};
+    try {
+      parsedJson = JSON.parse(rawResponse);
+    } catch (jsonErr) {
+      console.error("[OpenAI JSON Parse Error]: Falha ao interpretar resposta estruturada da OpenAI");
+      return res.status(502).json({
+        error: "A IA respondeu com formato inv\xE1lido. Tente novamente."
+      });
+    }
+    const analysis = {
+      id: `analysis-${Date.now()}`,
+      fileName: cleanFileName,
+      analyzedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      modelUsed: completion.model || OPENAI_CONFIG.model,
+      isOfflineFallback: false,
+      resumoExecutivo: parsedJson.resumoExecutivo || "An\xE1lise t\xE9cnica conclu\xEDda.",
+      partes: {
+        poloAtivo: Array.isArray(parsedJson.partes?.poloAtivo) ? parsedJson.partes.poloAtivo : ["[N\xE3o informado no documento]"],
+        poloPassivo: Array.isArray(parsedJson.partes?.poloPassivo) ? parsedJson.partes.poloPassivo : ["[N\xE3o informado no documento]"],
+        terceiros: Array.isArray(parsedJson.partes?.terceiros) ? parsedJson.partes.terceiros : ["[N\xE3o informado no documento]"]
+      },
+      objeto: parsedJson.objeto || "[N\xE3o informado no documento]",
+      pedidos: Array.isArray(parsedJson.pedidos) ? parsedJson.pedidos : ["[N\xE3o informado no documento]"],
+      fatosRelevantes: Array.isArray(parsedJson.fatosRelevantes) ? parsedJson.fatosRelevantes : [],
+      decisoes: Array.isArray(parsedJson.decisoes) ? parsedJson.decisoes : ["[N\xE3o informado no documento]"],
+      provas: Array.isArray(parsedJson.provas) ? parsedJson.provas : ["[N\xE3o informado no documento]"],
+      inconsistencias: Array.isArray(parsedJson.inconsistencias) ? parsedJson.inconsistencias : [],
+      fundamentosJuridicos: Array.isArray(parsedJson.fundamentosJuridicos) ? parsedJson.fundamentosJuridicos : ["[N\xE3o informado no documento]"],
+      providenciasSugeridas: Array.isArray(parsedJson.providenciasSugeridas) ? parsedJson.providenciasSugeridas : [],
+      alertasValidacao: [
+        ...Array.isArray(parsedJson.alertasValidacao) ? parsedJson.alertasValidacao : [],
+        "Relat\xF3rio gerado por intelig\xEAncia artificial para apoio preparat\xF3rio de estudo e triagem.",
+        "As conclus\xF5es n\xE3o substituem parecer jur\xEDdico nem atua\xE7\xE3o privativa de advogado habilitado perante a OAB."
+      ],
+      tokensUsage: {
+        promptTokens: completion.usage?.prompt_tokens,
+        completionTokens: completion.usage?.completion_tokens,
+        totalTokens: completion.usage?.total_tokens
+      }
+    };
+    const duration = Date.now() - startTime;
+    console.log(
+      `[OpenAI Analysis] Sucesso: arquivo="${cleanFileName}", modelo=${analysis.modelUsed}, tokens=${completion.usage?.total_tokens || 0}, tempo=${duration}ms`
+    );
+    return res.json({
+      success: true,
+      analysis
+    });
+  } catch (error) {
+    console.error("[OpenAI Analysis Error]:", error?.message || "Erro inesperado");
+    return res.status(error?.status || 500).json({
+      error: error?.message || "Falha ao processar an\xE1lise do documento via OpenAI."
+    });
   }
 });
 async function startServer() {

@@ -78,16 +78,36 @@ O projeto já inclui um `Dockerfile` e `docker-compose.yml` prontos para produç
 
 ## 🤖 Como Funciona a Inteligência Artificial / Assistente
 
-O assistente foi desenhado com total flexibilidade para você nunca ficar preso a uma plataforma:
+O NoteJuris conta com duas camadas de inteligência artificial complementares:
 
+### 1. Análise Técnica de Peças e Processos (OpenAI SDK — gpt-4o-mini)
+- **Objetivo:** Triagem estruturada e leitura de autos judiciais, petições iniciais, contestações, recursos e decisões.
+- **Formatos suportados:** **PDF**, **DOCX (Word)**, **TXT** e **Markdown** (até 15 MB).
+- **Relatório estruturado:** Identificação de partes (polo ativo, passivo e terceiros), objeto, pedidos, fatos relevantes, decisões, provas, inconsistências/riscos, fundamentos jurídicos e providências sugeridas.
+- **Rigor e Contenção:** Nenhuma citação, prazo ou artigo é presumido ou inventado. Informações ausentes são explicitamente sinalizadas como `[Não informado no documento]`. Toda conclusão é demarcada como informativa, dependendo de validação privativa por advogado habilitado.
+- **Privacidade e Sigilo:** Processamento 100% em memória volátil temporária. Nenhum documento nem seu conteúdo é salvo em disco ou gravado em logs.
+- **Modo Offline:** Caso nenhuma chave da OpenAI esteja presente, o sistema opera em modo de contingência heurística local sem quebrar a aplicação.
+
+#### Como configurar a chave no Render (Deploy em Produção):
+1. Acesse o [Dashboard do Render](https://dashboard.render.com/).
+2. Selecione o serviço web do **NoteJuris**.
+3. No menu lateral esquerdo, clique na aba **Environment**.
+4. Clique no botão **Add Environment Variable** (ou *Add from .env*).
+5. Preencha:
+   - **Key:** `OPENAI_API_KEY`
+   - **Value:** sua chave privada da OpenAI (ex.: `sk-proj-...`).
+   - *(Opcional)* **Key:** `OPENAI_MODEL` | **Value:** `gpt-4o-mini`
+6. Clique em **Save Changes**. O Render fará o redeploy automático da imagem Docker com a chave injetada com segurança e inacessível ao frontend/navegador.
+
+---
+
+### 2. Assistente de Estudos e Flashcards (Google Gemini)
 1. **Modo Offline (Sem Dependência de IA ou Internet):**
    - Ativo por padrão se nenhuma chave for configurada.
    - Gera esquemas estruturados instantâneos (linhas do tempo, fluxogramas, jurisprudência, prazos críticos e questões com gabarito) usando o motor de templates jurídicos embutido no servidor.
 
 2. **Chave Própria (BYOK - Bring Your Own Key):**
-   - Caso queira respostas dinâmicas em tempo real com a IA do Google Gemini, você pode:
-     - Adicionar `GEMINI_API_KEY="sua_chave"` no arquivo `.env` do seu servidor; OU
-     - Clicar no botão **⚙️ Configurações** dentro do assistente na interface e colar sua chave pessoal. Ela ficará salva com segurança apenas no seu navegador.
+   - Adicionar `GEMINI_API_KEY="sua_chave"` no `.env` do servidor ou preencher diretamente no modal `AiConfigModal` na interface.
 
 ---
 
