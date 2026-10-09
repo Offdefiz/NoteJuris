@@ -13,10 +13,12 @@ import {
   RotateCcw,
   Trash2,
   Edit2,
-  BookOpen
+  BookOpen,
+  Key
 } from 'lucide-react';
 import { Flashcard, CardMastery, NotebookDocument } from '../types/notebook';
 import { generateDefaultFlashcards } from '../utils/flashcardsGenerator';
+import { useAi } from '../context/AiContext';
 
 interface FlashcardsModalProps {
   isOpen: boolean;
@@ -29,6 +31,8 @@ export const FlashcardsModal: React.FC<FlashcardsModalProps> = ({
   onClose,
   document,
 }) => {
+  const { generateAiFlashcards, isKeyConfigured, isOfflineMode, openConfigModal } = useAi();
+
   const [cards, setCards] = useState<Flashcard[]>(() => {
     const saved = localStorage.getItem(`caderno_juridico_flashcards_${document.id}`);
     if (saved) {
@@ -192,47 +196,25 @@ export const FlashcardsModal: React.FC<FlashcardsModalProps> = ({
   const handleGenerateCardsAI = async () => {
     setIsGeneratingAI(true);
     try {
-      const res = await fetch('/api/gemini/assist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `Gere 4 flashcards de alto nível para fixação sobre a aula: ${document.title} (${document.disciplineName}). 
-Estruture cada cartão exatamente neste formato:
-Pergunta: [Pergunta ou Caso]
-Resposta: [Resposta fundamentada com artigo de lei]
-Artigo: [Artigo CPP/CP/CF correspondente]
----`,
-          currentTitle: document.title,
-          discipline: document.disciplineName,
-        }),
+      const result = await generateAiFlashcards({
+        currentTitle: document.title,
+        discipline: document.disciplineName,
+        count: 4,
       });
 
-      const data = await res.json();
-      if (data.text) {
-        // Parse simple text into flashcards
-        const blocks = data.text.split('---').filter((b: string) => b.includes('Pergunta:'));
-        const newCards: Flashcard[] = [];
+      if (result.cards && result.cards.length > 0) {
+        const newCards: Flashcard[] = result.cards.map((c, i) => ({
+          id: `fc-ai-${Date.now()}-${i}`,
+          front: c.front,
+          back: c.back,
+          article: c.article || document.disciplineName,
+          category: c.category || 'Revisão IA',
+          mastery: 'unreviewed',
+        }));
 
-        blocks.forEach((block: string, i: number) => {
-          const frontMatch = block.match(/Pergunta:\s*([^\n]+)/i);
-          const backMatch = block.match(/Resposta:\s*([\s\S]+?)(?=Artigo:|$)/i);
-          const artMatch = block.match(/Artigo:\s*([^\n]+)/i);
-
-          if (frontMatch && backMatch) {
-            newCards.push({
-              id: `fc-gemini-${Date.now()}-${i}`,
-              front: frontMatch[1].trim(),
-              back: backMatch[1].trim(),
-              article: artMatch ? artMatch[1].trim() : document.disciplineName,
-              category: 'Gemini IA',
-              mastery: 'unreviewed',
-            });
-          }
-        });
-
-        if (newCards.length > 0) {
-          setCards((prev) => [...prev, ...newCards]);
-        }
+        setCards((prev) => [...prev, ...newCards]);
+        setCurrentIndex(cards.length);
+        setIsFlipped(false);
       }
     } catch (err) {
       console.error('Error generating cards with AI:', err);
@@ -273,15 +255,23 @@ Artigo: [Artigo CPP/CP/CF correspondente]
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={handleGenerateCardsAI}
               disabled={isGeneratingAI}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/70 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 text-[11px] font-semibold transition-colors disabled:opacity-50"
-              title="Gerar novos cartões automaticamente com Gemini"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/70 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 text-[11px] font-semibold transition-colors disabled:opacity-50"
+              title={isKeyConfigured ? "Gerar flashcards com a API Google Gemini" : "Gerar novos cartões com IA"}
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>{isGeneratingAI ? 'Gerando...' : '+ IA Flashcards'}</span>
+            </button>
+
+            <button
+              onClick={openConfigModal}
+              className="p-1.5 rounded-lg border border-[#dedbd3] dark:border-[#2b3548] bg-white dark:bg-[#1c2331] text-[#636c7e] dark:text-[#a0abbd] hover:bg-[#edebe6] dark:hover:bg-[#252e40] transition-colors"
+              title="Configurar chave da API Google Gemini"
+            >
+              <Key className="w-3.5 h-3.5" />
             </button>
 
             <button
@@ -295,7 +285,7 @@ Artigo: [Artigo CPP/CP/CF correspondente]
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-[#7c8699] dark:text-[#9ea8bd] hover:bg-black/5 dark:hover:bg-white/5 transition-colors ml-1"
+              className="p-1.5 rounded-lg text-[#7c8699] dark:text-[#9ea8bd] hover:bg-black/5 dark:hover:bg-white/5 transition-colors ml-0.5"
             >
               <X className="w-5 h-5" />
             </button>
@@ -397,7 +387,7 @@ Artigo: [Artigo CPP/CP/CF correspondente]
               {/* Card Container with 3D Flip */}
               <div
                 onClick={() => setIsFlipped((f) => !f)}
-                className={`relative w-full min-h-[300px] sm:min-h-[330px] rounded-3xl p-6 sm:p-8 cursor-pointer transition-all duration-300 transform select-none shadow-md border hover:border-[#3b5998] dark:hover:border-[#60a5fa] flex flex-col justify-between ${
+                className={`relative w-full min-h-[260px] sm:min-h-[290px] rounded-2xl p-5 sm:p-7 cursor-pointer transition-all duration-300 transform select-none shadow-xs border hover:border-[#3b5998]/60 dark:hover:border-[#60a5fa]/60 flex flex-col justify-between ${
                   isFlipped
                     ? 'bg-gradient-to-br from-white to-[#f4f7fb] dark:from-[#192230] dark:to-[#141b27] border-[#cfe0f4] dark:border-[#2f4260]'
                     : 'bg-white dark:bg-[#181e2b] border-[#e2ded6] dark:border-[#283245]'
@@ -405,39 +395,39 @@ Artigo: [Artigo CPP/CP/CF correspondente]
               >
                 {/* Card Top badges */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-[#edeae3] dark:bg-[#242c3d] text-[#4f5768] dark:text-[#a0abbd]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9.5px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-[#edeae3] dark:bg-[#242c3d] text-[#4f5768] dark:text-[#a0abbd]">
                       {currentCard?.category || 'Geral'}
                     </span>
                     {currentCard?.article && (
-                      <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md bg-[#f6ecd9] dark:bg-[#312a1d] text-[#8c672b] dark:text-[#e4be79]">
+                      <span className="text-[9.5px] font-mono font-semibold px-2 py-0.5 rounded-md bg-[#f6ecd9] dark:bg-[#312a1d] text-[#8c672b] dark:text-[#e4be79]">
                         {currentCard.article}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-[#8a92a2]">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9.5px] font-mono text-[#8a92a2]">
                       {isFlipped ? 'VERSO (RESPOSTA)' : 'FRENTE (QUESTÃO)'}
                     </span>
-                    <RotateCw className="w-3.5 h-3.5 text-[#8a92a2]" />
+                    <RotateCw className="w-3 h-3 text-[#8a92a2]" />
                   </div>
                 </div>
 
-                {/* Question / Answer Content */}
-                <div className="my-auto py-6 text-center">
+                {/* Question / Answer Content (Refined Minimalist Dimensions) */}
+                <div className="my-auto py-4 text-center">
                   {!isFlipped ? (
-                    <div className="space-y-3">
-                      <p className="font-serif text-xl sm:text-2xl font-bold text-[#141924] dark:text-[#f8fafc] leading-snug">
+                    <div className="space-y-2 max-w-md mx-auto">
+                      <p className="font-serif text-[17px] sm:text-[18.5px] md:text-[19px] font-bold text-[#141924] dark:text-[#f8fafc] leading-snug tracking-tight">
                         {currentCard?.front}
                       </p>
-                      <p className="text-[11px] text-[#868f9f] italic">
+                      <p className="text-[10px] text-[#868f9f] italic">
                         (Toque no cartão ou aperte Espaço para ver a resposta)
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3 text-left">
-                      <p className="text-[14px] sm:text-[15px] text-[#222938] dark:text-[#e2e8f0] leading-relaxed whitespace-pre-wrap font-sans">
+                    <div className="space-y-2 text-left max-w-md mx-auto">
+                      <p className="text-[13px] sm:text-[13.5px] text-[#222938] dark:text-[#e2e8f0] leading-relaxed whitespace-pre-wrap font-sans">
                         {currentCard?.back}
                       </p>
                     </div>
@@ -445,8 +435,8 @@ Artigo: [Artigo CPP/CP/CF correspondente]
                 </div>
 
                 {/* Card Bottom: delete / keyboard helper */}
-                <div className="flex items-center justify-between text-[11px] text-[#8a92a2] pt-2 border-t border-[#f0eee9] dark:border-[#222a3a]">
-                  <span>Atalho: <kbd className="font-mono px-1 py-0.5 rounded bg-black/5 dark:bg-white/10">Espaço</kbd></span>
+                <div className="flex items-center justify-between text-[10px] text-[#8a92a2] pt-2 border-t border-[#f0eee9] dark:border-[#222a3a]">
+                  <span>Atalho: <kbd className="font-mono px-1 py-0.2 rounded bg-black/5 dark:bg-white/10 text-[9px]">Espaço</kbd></span>
                   {cards.length > 1 && (
                     <button
                       onClick={(e) => {
@@ -456,18 +446,18 @@ Artigo: [Artigo CPP/CP/CF correspondente]
                       className="text-[#9ea7b7] hover:text-rose-600 transition-colors p-1"
                       title="Excluir este cartão"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   )}
                 </div>
               </div>
 
               {/* Action Rating Buttons (shown when flipped) */}
-              <div className="w-full mt-4 flex items-center justify-between gap-2">
+              <div className="w-full mt-3.5 flex items-center justify-between gap-2">
                 <button
                   onClick={handlePrevCard}
                   disabled={currentIndex === 0}
-                  className="p-2.5 rounded-xl border border-[#dedbd3] dark:border-[#2b3548] text-[#555d6e] dark:text-[#9ea8bc] hover:bg-[#edebe6] dark:hover:bg-[#1f2635] disabled:opacity-30 transition-colors"
+                  className="p-2 rounded-xl border border-[#dedbd3] dark:border-[#2b3548] text-[#555d6e] dark:text-[#9ea8bc] hover:bg-[#edebe6] dark:hover:bg-[#1f2635] disabled:opacity-30 transition-colors"
                   title="Cartão anterior (←)"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -477,21 +467,21 @@ Artigo: [Artigo CPP/CP/CF correspondente]
                   <div className="flex-1 flex items-center gap-2">
                     <button
                       onClick={() => handleSetMastery('hard')}
-                      className="flex-1 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 hover:bg-rose-100 text-[12px] font-semibold transition-colors text-center"
+                      className="flex-1 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 hover:bg-rose-100 text-[11.5px] font-semibold transition-colors text-center"
                       title="Atalho: Tecla 1"
                     >
                       🔴 Errei [1]
                     </button>
                     <button
                       onClick={() => handleSetMastery('good')}
-                      className="flex-1 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 text-[12px] font-semibold transition-colors text-center"
+                      className="flex-1 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-100 text-[11.5px] font-semibold transition-colors text-center"
                       title="Atalho: Tecla 2"
                     >
                       🟡 Dúvida [2]
                     </button>
                     <button
                       onClick={() => handleSetMastery('easy')}
-                      className="flex-1 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 text-[12px] font-semibold transition-colors text-center"
+                      className="flex-1 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 text-[11.5px] font-semibold transition-colors text-center"
                       title="Atalho: Tecla 3"
                     >
                       🟢 Dominei [3]
@@ -500,7 +490,7 @@ Artigo: [Artigo CPP/CP/CF correspondente]
                 ) : (
                   <button
                     onClick={() => setIsFlipped(true)}
-                    className="flex-1 py-2.5 rounded-xl bg-[#202735] dark:bg-[#2c374c] hover:bg-[#141924] text-white text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                    className="flex-1 py-2 rounded-xl bg-[#202735] dark:bg-[#2c374c] hover:bg-[#141924] text-white text-[11.5px] font-semibold transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
                   >
                     <RotateCw className="w-3.5 h-3.5" />
                     <span>Virar Cartão</span>
@@ -509,7 +499,7 @@ Artigo: [Artigo CPP/CP/CF correspondente]
 
                 <button
                   onClick={handleNextCard}
-                  className="p-2.5 rounded-xl border border-[#dedbd3] dark:border-[#2b3548] text-[#555d6e] dark:text-[#9ea8bc] hover:bg-[#edebe6] dark:hover:bg-[#1f2635] transition-colors"
+                  className="p-2 rounded-xl border border-[#dedbd3] dark:border-[#2b3548] text-[#555d6e] dark:text-[#9ea8bc] hover:bg-[#edebe6] dark:hover:bg-[#1f2635] transition-colors"
                   title="Próximo cartão (→)"
                 >
                   <ChevronRight className="w-4 h-4" />

@@ -155,6 +155,47 @@ Revise os informativos recentes publicados sobre ${discipline || "a disciplina"}
 *(Modo servidor local ativo)*`
   };
 }
+app.post("/api/gemini/validate-key", async (req, res) => {
+  try {
+    const { apiKey } = req.body;
+    const testKey = (apiKey || req.headers["x-gemini-key"] || process.env.GEMINI_API_KEY || "").toString().trim();
+    if (!testKey) {
+      return res.status(400).json({
+        valid: false,
+        error: "Nenhuma chave fornecida para teste."
+      });
+    }
+    const aiClient = new GoogleGenAI({
+      apiKey: testKey,
+      httpOptions: {
+        headers: {
+          "User-Agent": "caderno-juridico-selfhosted"
+        }
+      }
+    });
+    const response = await aiClient.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: 'Responda apenas "OK" para teste de conex\xE3o.'
+    });
+    const reply = response.text || "";
+    if (reply) {
+      return res.json({
+        valid: true,
+        message: "Conex\xE3o com a API do Google Gemini validada com sucesso!"
+      });
+    }
+    return res.status(500).json({
+      valid: false,
+      error: "Resposta vazia da API do Gemini."
+    });
+  } catch (error) {
+    console.warn("Falha na valida\xE7\xE3o da chave Gemini:", error.message);
+    return res.status(400).json({
+      valid: false,
+      error: error.message || "Falha ao conectar com a API do Google Gemini. Verifique a chave."
+    });
+  }
+});
 app.post("/api/gemini/assist", async (req, res) => {
   try {
     const { prompt, currentTitle, discipline, customApiKey, mode } = req.body;
@@ -191,7 +232,7 @@ ${prompt}
 
 Responda em formato claro em Portugu\xEAs do Brasil com explica\xE7\xF5es diretas e artigos de lei.`;
       const response = await aiClient.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.8-flash",
         contents: fullPrompt,
         config: {
           systemInstruction,
@@ -220,6 +261,107 @@ Responda em formato claro em Portugu\xEAs do Brasil com explica\xE7\xF5es direta
     return res.status(500).json({
       error: error.message || "Erro ao processar consulta."
     });
+  }
+});
+app.post("/api/gemini/flashcards", async (req, res) => {
+  try {
+    const { currentTitle, discipline, customApiKey, mode, count = 4, notesContext } = req.body;
+    const activeApiKey = (customApiKey || req.headers["x-gemini-key"] || process.env.GEMINI_API_KEY || "").toString().trim();
+    if (mode === "offline" || !activeApiKey) {
+      return res.json({
+        success: true,
+        cards: [
+          {
+            front: `Qual o conceito fundamental e a base legal de ${currentTitle || "deste rito"}?`,
+            back: `Trata-se de procedimento previsto na legisla\xE7\xE3o processual/constitucional aplic\xE1vel \xE0 disciplina de ${discipline || "Direito"}.`,
+            article: "Legisla\xE7\xE3o Aplic\xE1vel",
+            category: "Conceito"
+          },
+          {
+            front: `Quais os prazos perempt\xF3rios associados a ${currentTitle || "este tema"}?`,
+            back: `Os prazos devem ser contados estritamente na forma legal (dias corridos no CPP ou dias \xFAteis no CPC), sob pena de preclus\xE3o.`,
+            article: "Regra Geral de Prazos",
+            category: "Prazos"
+          }
+        ],
+        isOfflineMode: true
+      });
+    }
+    try {
+      const aiClient = new GoogleGenAI({
+        apiKey: activeApiKey,
+        httpOptions: {
+          headers: {
+            "User-Agent": "caderno-juridico-selfhosted"
+          }
+        }
+      });
+      const prompt = `Gere exatamente ${count} flashcards de fixa\xE7\xE3o para estudo de Direito para a mat\xE9ria "${currentTitle}" (${discipline}).
+${notesContext ? `Contexto complementar do caderno: ${notesContext.slice(0, 500)}` : ""}
+
+Estruture CADA flashcard EXATAMENTE com as tags abaixo:
+CARD_START
+PERGUNTA: [pergunta objetiva, caso hipot\xE9tico ou conceito]
+RESPOSTA: [resposta fundamentada na doutrina e jurisprud\xEAncia]
+ARTIGO: [artigo de lei exato, ex: CPP, art. 10 ou CF/88, art. 5\xBA, LV]
+CATEGORIA: [ex: Conceito, Prazos, Compet\xEAncia, Jurisprud\xEAncia]
+CARD_END`;
+      const response = await aiClient.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents: prompt,
+        config: {
+          temperature: 0.4
+        }
+      });
+      const rawText = response.text || "";
+      const cards = [];
+      const blocks = rawText.split("CARD_START");
+      for (const block of blocks) {
+        if (!block.includes("PERGUNTA:")) continue;
+        const frontMatch = block.match(/PERGUNTA:\s*([^\n]+)/i);
+        const backMatch = block.match(/RESPOSTA:\s*([\s\S]+?)(?=ARTIGO:|CATEGORIA:|CARD_END|$)/i);
+        const artMatch = block.match(/ARTIGO:\s*([^\n]+)/i);
+        const catMatch = block.match(/CATEGORIA:\s*([^\n]+)/i);
+        if (frontMatch && backMatch) {
+          cards.push({
+            front: frontMatch[1].trim(),
+            back: backMatch[1].trim(),
+            article: artMatch ? artMatch[1].trim() : "Legisla\xE7\xE3o",
+            category: catMatch ? catMatch[1].trim() : "Geral"
+          });
+        }
+      }
+      if (cards.length === 0) {
+        cards.push({
+          front: `Fixa\xE7\xE3o: Qual o ponto central de ${currentTitle}?`,
+          back: rawText.slice(0, 300),
+          article: discipline || "Legisla\xE7\xE3o",
+          category: "Resumo IA"
+        });
+      }
+      return res.json({
+        success: true,
+        cards,
+        isOfflineMode: false
+      });
+    } catch (genError) {
+      console.warn("Gemini Flashcards generation failed, using fallback:", genError.message);
+      return res.json({
+        success: true,
+        cards: [
+          {
+            front: `Conceito e finalidade: ${currentTitle}`,
+            back: `Mat\xE9ria de ${discipline}. Consulte o c\xF3digo e anota\xE7\xF5es para detalhes.`,
+            article: "Legisla\xE7\xE3o",
+            category: "Geral"
+          }
+        ],
+        isOfflineMode: true
+      });
+    }
+  } catch (error) {
+    console.error("Flashcards API Error:", error);
+    return res.status(500).json({ error: error.message });
   }
 });
 async function startServer() {

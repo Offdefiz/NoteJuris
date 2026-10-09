@@ -17,10 +17,12 @@ import {
   ChevronRight,
   Plus,
   FileText,
-  FolderPlus
+  FolderPlus,
+  Key
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useAi } from '../context/AiContext';
 import { Discipline, TopicItem } from '../types/notebook';
 
 interface SidebarProps {
@@ -52,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { user, profile } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { openConfigModal, isKeyConfigured, isOfflineMode } = useAi();
 
   // Track expanded disciplines
   const [expandedDisciplines, setExpandedDisciplines] = useState<Record<string, boolean>>({
@@ -294,6 +297,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <FileCheck2 className="w-4 h-4 text-[#636c7e] dark:text-[#8893a7]" />
                 <span>Questões & Prazos</span>
+              </button>
+              <button
+                onClick={() => {
+                  onCloseMobile();
+                  openConfigModal();
+                }}
+                className="flex items-center justify-between w-full px-3 py-1.5 text-[12px] font-medium text-[#414856] dark:text-[#c4cbd8] rounded-lg hover:bg-[#edebe6]/60 dark:hover:bg-[#1f2635] transition-colors text-left"
+                title="Configurar Chave da API Google Gemini"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Key className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span>API Google</span>
+                </div>
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isOfflineMode
+                      ? 'bg-amber-400'
+                      : isKeyConfigured
+                      ? 'bg-emerald-500'
+                      : 'bg-slate-300 dark:bg-slate-600'
+                  }`}
+                />
               </button>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { initialNotebook, defaultDisciplines, sampleTopics, presidenciaRepublica
 import { NotebookDocument, LegendType, TimelineItem, NoteBlock, Discipline, TopicItem } from './types/notebook';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { AiProvider } from './context/AiContext';
 import { Sidebar } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { DocumentHeader } from './components/DocumentHeader';
@@ -17,6 +18,7 @@ import { ShareModal } from './components/ShareModal';
 import { GeminiDrawer } from './components/GeminiDrawer';
 import { CreateModal } from './components/CreateModal';
 import { FlashcardsModal } from './components/FlashcardsModal';
+import { AiConfigModal } from './components/AiConfigModal';
 import { BottomNav } from './components/BottomNav';
 import { MobileDisciplinesSheet } from './components/MobileDisciplinesSheet';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -692,6 +694,9 @@ function MainApp() {
         document={documentData}
       />
 
+      {/* Universal Google Gemini API Key Configuration Modal */}
+      <AiConfigModal />
+
       {/* Mobile Bottom Navigation Bar (Instagram/Facebook Style) */}
       <BottomNav
         activeTab={mobileActiveTab}
@@ -726,7 +731,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <MainApp />
+        <AiProvider>
+          <MainApp />
+        </AiProvider>
       </AuthProvider>
     </ThemeProvider>
   );

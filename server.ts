@@ -113,6 +113,54 @@ function generateOfflineLegalResponse(prompt: string, currentTitle: string, disc
   };
 }
 
+// Endpoint: Validate Google Gemini API Key
+app.post('/api/gemini/validate-key', async (req, res) => {
+  try {
+    const { apiKey } = req.body;
+    const testKey = (apiKey ? apiKey : req.headers['x-gemini-key'] || '').toString().trim();
+
+    if (!testKey) {
+      return res.status(400).json({
+        valid: false,
+        error: 'Nenhuma chave Google Gemini informada para teste. Digite sua chave.',
+      });
+    }
+
+    const aiClient = new GoogleGenAI({
+      apiKey: testKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'caderno-juridico-selfhosted',
+        },
+      },
+    });
+
+    const response = await aiClient.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: 'Responda apenas "OK" para teste de conexão.',
+    });
+
+    const reply = response.text || '';
+    if (reply) {
+      return res.json({
+        valid: true,
+        message: 'Conexão com a API do Google Gemini validada com sucesso!',
+      });
+    }
+
+    return res.status(500).json({
+      valid: false,
+      error: 'Resposta vazia da API do Gemini.',
+    });
+  } catch (error: any) {
+    console.warn('Falha na validação da chave Gemini:', error.message);
+    return res.status(400).json({
+      valid: false,
+      error: error.message || 'Falha ao conectar com a API do Google Gemini. Verifique a chave.',
+    });
+  }
+});
+
 // Endpoint: Gemini Assistant for Law Studies (With complete BYOK + Offline fallback support)
 app.post('/api/gemini/assist', async (req, res) => {
   try {
@@ -159,7 +207,7 @@ ${prompt}
 Responda em formato claro em Português do Brasil com explicações diretas e artigos de lei.`;
 
       const response = await aiClient.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.8-flash',
         contents: fullPrompt,
         config: {
           systemInstruction,
@@ -187,6 +235,120 @@ Responda em formato claro em Português do Brasil com explicações diretas e ar
     return res.status(500).json({
       error: error.message || 'Erro ao processar consulta.',
     });
+  }
+});
+
+// Endpoint: AI Flashcards Generator (Structured Output)
+app.post('/api/gemini/flashcards', async (req, res) => {
+  try {
+    const { currentTitle, discipline, customApiKey, mode, count = 4, notesContext } = req.body;
+    const activeApiKey = (customApiKey || req.headers['x-gemini-key'] || process.env.GEMINI_API_KEY || '').toString().trim();
+
+    if (mode === 'offline' || !activeApiKey) {
+      // Fallback cards
+      return res.json({
+        success: true,
+        cards: [
+          {
+            front: `Qual o conceito fundamental e a base legal de ${currentTitle || 'deste rito'}?`,
+            back: `Trata-se de procedimento previsto na legislação processual/constitucional aplicável à disciplina de ${discipline || 'Direito'}.`,
+            article: 'Legislação Aplicável',
+            category: 'Conceito',
+          },
+          {
+            front: `Quais os prazos peremptórios associados a ${currentTitle || 'este tema'}?`,
+            back: `Os prazos devem ser contados estritamente na forma legal (dias corridos no CPP ou dias úteis no CPC), sob pena de preclusão.`,
+            article: 'Regra Geral de Prazos',
+            category: 'Prazos',
+          },
+        ],
+        isOfflineMode: true,
+      });
+    }
+
+    try {
+      const aiClient = new GoogleGenAI({
+        apiKey: activeApiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'caderno-juridico-selfhosted',
+          },
+        },
+      });
+
+      const prompt = `Gere exatamente ${count} flashcards de fixação para estudo de Direito para a matéria "${currentTitle}" (${discipline}).
+${notesContext ? `Contexto complementar do caderno: ${notesContext.slice(0, 500)}` : ''}
+
+Estruture CADA flashcard EXATAMENTE com as tags abaixo:
+CARD_START
+PERGUNTA: [pergunta objetiva, caso hipotético ou conceito]
+RESPOSTA: [resposta fundamentada na doutrina e jurisprudência]
+ARTIGO: [artigo de lei exato, ex: CPP, art. 10 ou CF/88, art. 5º, LV]
+CATEGORIA: [ex: Conceito, Prazos, Competência, Jurisprudência]
+CARD_END`;
+
+      const response = await aiClient.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          temperature: 0.4,
+        },
+      });
+
+      const rawText = response.text || '';
+      const cards: Array<{ front: string; back: string; article: string; category: string }> = [];
+
+      const blocks = rawText.split('CARD_START');
+      for (const block of blocks) {
+        if (!block.includes('PERGUNTA:')) continue;
+        const frontMatch = block.match(/PERGUNTA:\s*([^\n]+)/i);
+        const backMatch = block.match(/RESPOSTA:\s*([\s\S]+?)(?=ARTIGO:|CATEGORIA:|CARD_END|$)/i);
+        const artMatch = block.match(/ARTIGO:\s*([^\n]+)/i);
+        const catMatch = block.match(/CATEGORIA:\s*([^\n]+)/i);
+
+        if (frontMatch && backMatch) {
+          cards.push({
+            front: frontMatch[1].trim(),
+            back: backMatch[1].trim(),
+            article: artMatch ? artMatch[1].trim() : 'Legislação',
+            category: catMatch ? catMatch[1].trim() : 'Geral',
+          });
+        }
+      }
+
+      if (cards.length === 0) {
+        // Fallback parse if tags weren't exact
+        cards.push({
+          front: `Fixação: Qual o ponto central de ${currentTitle}?`,
+          back: rawText.slice(0, 300),
+          article: discipline || 'Legislação',
+          category: 'Resumo IA',
+        });
+      }
+
+      return res.json({
+        success: true,
+        cards,
+        isOfflineMode: false,
+      });
+    } catch (genError: any) {
+      console.warn('Gemini Flashcards generation failed, using fallback:', genError.message);
+      return res.json({
+        success: true,
+        cards: [
+          {
+            front: `Conceito e finalidade: ${currentTitle}`,
+            back: `Matéria de ${discipline}. Consulte o código e anotações para detalhes.`,
+            article: 'Legislação',
+            category: 'Geral',
+          },
+        ],
+        isOfflineMode: true,
+      });
+    }
+  } catch (error: any) {
+    console.error('Flashcards API Error:', error);
+    return res.status(500).json({ error: error.message });
   }
 });
 

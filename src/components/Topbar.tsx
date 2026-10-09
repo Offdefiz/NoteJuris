@@ -9,10 +9,12 @@ import {
   Sun, 
   User as UserIcon,
   Sparkles,
-  Plus
+  Plus,
+  Key
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useAi } from '../context/AiContext';
 
 interface TopbarProps {
   disciplineName: string;
@@ -43,6 +45,7 @@ export const Topbar: React.FC<TopbarProps> = ({
 }) => {
   const { user, profile } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { isKeyConfigured, openConfigModal, isOfflineMode } = useAi();
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-4 md:px-6 bg-[#fbfbfa]/90 dark:bg-[#151922]/90 backdrop-blur-md border-b border-[#e8e6e1] dark:border-[#242b3b] shadow-2xs">
@@ -91,6 +94,26 @@ export const Topbar: React.FC<TopbarProps> = ({
           <Sparkles className="w-3.5 h-3.5 text-blue-200" />
           <span className="hidden sm:inline">Assistente Gemini</span>
           <span className="sm:hidden">Gemini</span>
+        </button>
+
+        {/* Google API Key Configuration Button */}
+        <button
+          onClick={openConfigModal}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#dedbd3] dark:border-[#2c364b] bg-white dark:bg-[#1c2331] hover:bg-[#edebe6] dark:hover:bg-[#263145] text-[11.5px] font-medium text-[#3b4353] dark:text-[#c4cbda] transition-all shadow-2xs"
+          title={isOfflineMode ? 'IA em modo offline (Clique para configurar API Google)' : isKeyConfigured ? 'API Google ativa (Clique para ver/alterar)' : 'Configurar Chave da API Google'}
+        >
+          <Key className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <span className="hidden lg:inline">API Google</span>
+          <span 
+            className={`w-2 h-2 rounded-full ${
+              isOfflineMode 
+                ? 'bg-amber-400' 
+                : isKeyConfigured 
+                ? 'bg-emerald-500 ring-2 ring-emerald-500/20' 
+                : 'bg-slate-300 dark:bg-slate-600'
+            }`} 
+            title={isOfflineMode ? 'Modo Offline' : isKeyConfigured ? 'Chave Conectada' : 'Sem Chave'}
+          />
         </button>
 
         {/* Quick Add Topic Button */}

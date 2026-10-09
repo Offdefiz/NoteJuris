@@ -37,15 +37,15 @@ export const CustomNotesSection: React.FC<CustomNotesSectionProps> = ({
         {notes.map((note) => (
           <div
             key={note.id}
-            className="flex flex-col p-5 rounded-2xl bg-white dark:bg-[#181d27] border border-[#e2ded6] dark:border-[#273042] shadow-xs hover:border-[#cbc6ba] dark:hover:border-[#38455e] transition-all group"
+            className="flex flex-col p-4.5 sm:p-5 rounded-xl bg-white dark:bg-[#181d27] border border-[#e2ded6] dark:border-[#273042] shadow-2xs hover:border-[#cbc6ba] dark:hover:border-[#38455e] transition-all group"
           >
             {/* Note Card Header */}
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#f0eee9] dark:border-[#232a3a]">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[11px] font-bold text-[#303847] dark:text-[#9aa4b8] px-1.5 py-0.5 rounded bg-[#f3f0e8] dark:bg-[#202735]">
+            <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#f0eee9] dark:border-[#232a3a]">
+              <div className="flex items-center gap-1.5">
+                <span className="font-mono text-[10.5px] font-bold text-[#303847] dark:text-[#9aa4b8] px-1.5 py-0.2 rounded bg-[#f3f0e8] dark:bg-[#202735]">
                   {note.number}
                 </span>
-                <span className="text-[10px] font-bold tracking-wider text-[#798192] dark:text-[#8590a3] uppercase">
+                <span className="text-[9.5px] font-bold tracking-wider text-[#798192] dark:text-[#8590a3] uppercase">
                   BLOCO DE ANOTAÇÕES
                 </span>
               </div>
@@ -63,7 +63,7 @@ export const CustomNotesSection: React.FC<CustomNotesSectionProps> = ({
               contentEditable
               suppressContentEditableWarning
               onBlur={(e) => onUpdateNote(note.id, { title: e.currentTarget.textContent || note.title })}
-              className="font-serif text-[16px] font-bold text-[#141822] dark:text-[#f3f5fa] mb-2 leading-snug focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
+              className="font-serif text-[15px] sm:text-[15.5px] font-bold text-[#141822] dark:text-[#f3f5fa] mb-1.5 leading-snug focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
             >
               {note.title}
             </div>
@@ -73,7 +73,7 @@ export const CustomNotesSection: React.FC<CustomNotesSectionProps> = ({
               contentEditable
               suppressContentEditableWarning
               onBlur={(e) => onUpdateNote(note.id, { body: e.currentTarget.textContent || note.body })}
-              className="text-[16px] sm:text-[13px] text-[#4d5464] dark:text-[#9ea8bc] leading-relaxed flex-1 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
+              className="text-[16px] sm:text-[12.5px] text-[#4d5464] dark:text-[#9ea8bc] leading-relaxed flex-1 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
             >
               {note.body}
             </div>

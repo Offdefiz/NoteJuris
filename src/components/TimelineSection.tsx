@@ -146,13 +146,13 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
                 </div>
 
                 {/* Card */}
-                <div className="flex flex-col flex-1 p-4 rounded-2xl bg-white dark:bg-[#181d27] border border-[#e2ded6] dark:border-[#273042] shadow-xs hover:border-[#cbc6ba] dark:hover:border-[#38455e] transition-all">
+                <div className="flex flex-col flex-1 p-4 rounded-xl bg-white dark:bg-[#181d27] border border-[#e2ded6] dark:border-[#273042] shadow-2xs hover:border-[#cbc6ba] dark:hover:border-[#38455e] transition-all">
                   {/* Article citation */}
                   <span
                     contentEditable
                     suppressContentEditableWarning
                     onBlur={(e) => onUpdateItem(item.id, { article: e.currentTarget.textContent || item.article })}
-                    className="text-[16px] md:text-[11px] font-semibold text-[#876735] dark:text-[#d4aa5d] tracking-wide block mb-1 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1"
+                    className="text-[16px] md:text-[10.5px] font-semibold text-[#876735] dark:text-[#d4aa5d] tracking-wide block mb-1 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1"
                   >
                     {item.article}
                   </span>
@@ -162,7 +162,7 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
                     contentEditable
                     suppressContentEditableWarning
                     onBlur={(e) => onUpdateItem(item.id, { title: e.currentTarget.textContent || item.title })}
-                    className="font-serif text-[16px] font-bold text-[#141821] dark:text-[#f1f4f9] leading-snug mb-1.5 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
+                    className="font-serif text-[15.5px] sm:text-[16px] font-bold text-[#141821] dark:text-[#f1f4f9] leading-snug mb-1.5 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
                   >
                     {item.title}
                   </div>
@@ -172,14 +172,14 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
                     contentEditable
                     suppressContentEditableWarning
                     onBlur={(e) => onUpdateItem(item.id, { detail: e.currentTarget.textContent || item.detail })}
-                    className="text-[16px] md:text-[12px] text-[#4f5666] dark:text-[#9ea8bc] leading-relaxed mb-4 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
+                    className="text-[16px] md:text-[12px] text-[#4f5666] dark:text-[#9ea8bc] leading-relaxed mb-3.5 focus:outline-hidden hover:bg-black/5 dark:hover:bg-white/5 rounded px-1 -mx-1 cursor-text"
                   >
                     {item.detail}
                   </div>
 
                   {/* Notes box */}
-                  <div className="mt-auto pt-3 border-t border-[#f0eee9] dark:border-[#222938]">
-                    <div className="flex items-center justify-between text-[10px] font-bold tracking-wider text-[#7a8394] dark:text-[#8893a7] uppercase mb-1.5">
+                  <div className="mt-auto pt-2.5 border-t border-[#f0eee9] dark:border-[#222938]">
+                    <div className="flex items-center justify-between text-[9.5px] font-bold tracking-wider text-[#7a8394] dark:text-[#8893a7] uppercase mb-1">
                       <span>ANOTAÇÕES DA AULA</span>
                       <Plus className="w-3 h-3 text-[#99a2b3]" />
                     </div>
@@ -189,7 +189,7 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
                       suppressContentEditableWarning
                       onBlur={(e) => onUpdateItem(item.id, { notes: e.currentTarget.textContent || '' })}
                       data-placeholder="Clique para adicionar os detalhes explicados pelo professor..."
-                      className={`text-[16px] md:text-[12px] leading-relaxed p-2.5 rounded-xl bg-[#fbfaf8] dark:bg-[#131720] border border-[#ece8de] dark:border-[#222938] focus:outline-hidden focus:border-[#2d3b53] dark:focus:border-[#60a5fa] cursor-text min-h-[46px] ${
+                      className={`text-[16px] md:text-[11.5px] leading-relaxed p-2.5 rounded-lg bg-[#fbfaf8] dark:bg-[#131720] border border-[#ece8de] dark:border-[#222938] focus:outline-hidden focus:border-[#2d3b53] dark:focus:border-[#60a5fa] cursor-text min-h-[44px] ${
                         !item.notes
                           ? 'text-[#9fa6b5] dark:text-[#5e677c] italic'
                           : 'text-[#2a303d] dark:text-[#c7d0e0]'

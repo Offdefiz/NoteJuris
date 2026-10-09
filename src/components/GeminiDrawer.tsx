@@ -19,6 +19,7 @@ import {
   Cpu
 } from 'lucide-react';
 import { TimelineItem } from '../types/notebook';
+import { useAi } from '../context/AiContext';
 
 interface GeminiDrawerProps {
   isOpen: boolean;
@@ -53,24 +54,17 @@ export const GeminiDrawer: React.FC<GeminiDrawerProps> = ({
       timestamp: 'Agora',
     },
   ]);
+  const { 
+    apiKey, 
+    isOfflineMode, 
+    openConfigModal, 
+    askAiAssistant, 
+    isKeyConfigured 
+  } = useAi();
+
   const [inputPrompt, setInputPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
-
-  // BYOK (Bring Your Own Key) & Offline Mode Settings
-  const [customApiKey, setCustomApiKey] = useState(() => {
-    return localStorage.getItem('caderno_custom_gemini_key') || '';
-  });
-  const [isOfflineMode, setIsOfflineMode] = useState(() => {
-    return localStorage.getItem('caderno_ai_offline_mode') === 'true';
-  });
-
-  const handleSaveSettings = () => {
-    localStorage.setItem('caderno_custom_gemini_key', customApiKey.trim());
-    localStorage.setItem('caderno_ai_offline_mode', isOfflineMode ? 'true' : 'false');
-    setShowSettings(false);
-  };
 
   if (!isOpen) return null;
 
@@ -118,36 +112,18 @@ export const GeminiDrawer: React.FC<GeminiDrawerProps> = ({
     setLoading(true);
 
     try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (customApiKey.trim()) {
-        headers['x-gemini-key'] = customApiKey.trim();
-      }
-
-      const res = await fetch('/api/gemini/assist', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          prompt: text,
-          currentTitle,
-          discipline: disciplineName,
-          customApiKey: customApiKey.trim() || undefined,
-          mode: isOfflineMode ? 'offline' : undefined,
-        }),
+      const result = await askAiAssistant({
+        prompt: text,
+        currentTitle,
+        discipline: disciplineName,
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Erro na comunicação com o assistente.');
-      }
 
       const assistantMsg: Message = {
         id: `ai-${Date.now()}`,
         role: 'assistant',
-        content: data.text || 'Nenhuma resposta recebida.',
+        content: result.text || 'Nenhuma resposta recebida.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isOffline: data.isOfflineMode,
+        isOffline: result.isOffline,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -213,13 +189,9 @@ export const GeminiDrawer: React.FC<GeminiDrawerProps> = ({
 
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setShowSettings(!showSettings)}
-              className={`p-2 rounded-lg transition-colors ${
-                showSettings
-                  ? 'bg-[#e2dfd7] dark:bg-[#2c374c] text-[#141822] dark:text-white'
-                  : 'text-[#6b7385] dark:text-[#9ea8bd] hover:bg-[#edebe6] dark:hover:bg-[#202738]'
-              }`}
-              title="Configurações do Servidor / Chave de IA"
+              onClick={openConfigModal}
+              className="p-2 rounded-lg text-[#6b7385] dark:text-[#9ea8bd] hover:bg-[#edebe6] dark:hover:bg-[#202738] transition-colors"
+              title="Configurar Chave da API Google Gemini"
             >
               <Settings className="w-4 h-4" />
             </button>
@@ -232,92 +204,8 @@ export const GeminiDrawer: React.FC<GeminiDrawerProps> = ({
           </div>
         </div>
 
-        {/* Settings Panel Drawer View */}
-        {showSettings ? (
-          <div className="flex-1 p-6 space-y-5 overflow-y-auto bg-[#f8f7f2] dark:bg-[#131822]">
-            <div className="flex items-center gap-2 pb-2 border-b border-[#e5e2da] dark:border-[#242c3d]">
-              <Server className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h4 className="font-serif text-lg font-bold text-[#161c28] dark:text-white">
-                Independência & Servidor Próprio
-              </h4>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white dark:bg-[#1a212f] border border-[#dedbd3] dark:border-[#2b3548] space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
-                  <Check className="w-4 h-4" />
-                </div>
-                <div>
-                  <h5 className="text-[13px] font-bold text-[#151924] dark:text-white">
-                    Modo 100% Autônomo e Auto-Hospedado
-                  </h5>
-                  <p className="text-[11px] text-[#636c7e] dark:text-[#9fa9bc] mt-0.5 leading-relaxed">
-                    Este aplicativo funciona de forma independente. Todos os seus cadernos, anotações e fluxogramas ficam gravados localmente no seu computador, servidor ou container Docker.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h5 className="text-[12px] font-bold uppercase tracking-wider text-[#798192] dark:text-[#8d97ac]">
-                Configuração da Inteligência Artificial
-              </h5>
-
-              {/* Offline mode toggle */}
-              <label className="flex items-center justify-between p-3.5 rounded-xl bg-white dark:bg-[#1a212f] border border-[#dedbd3] dark:border-[#2b3548] cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <WifiOff className="w-4 h-4 text-amber-500" />
-                  <div>
-                    <span className="text-[13px] font-semibold text-[#181d28] dark:text-white block">
-                      Usar Somente Modo Offline (Sem IA Externa)
-                    </span>
-                    <span className="text-[11px] text-[#6f7788] dark:text-[#9aa4b7]">
-                      Gera esquemas jurídicos pré-definidos instantaneamente sem consultar nenhuma nuvem.
-                    </span>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={isOfflineMode}
-                  onChange={(e) => setIsOfflineMode(e.target.checked)}
-                  className="w-4 h-4 rounded text-blue-600 cursor-pointer"
-                />
-              </label>
-
-              {/* Custom API Key input */}
-              {!isOfflineMode && (
-                <div className="p-4 rounded-xl bg-white dark:bg-[#1a212f] border border-[#dedbd3] dark:border-[#2b3548] space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Key className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    <label className="text-[12px] font-bold text-[#1e2433] dark:text-white">
-                      Chave Google Gemini Própria (BYOK)
-                    </label>
-                  </div>
-                  <p className="text-[11px] text-[#6b7385] dark:text-[#9ea8bd] leading-relaxed">
-                    Opcional: Se você estiver rodando em um servidor próprio sem a chave configurada no <code>.env</code>, você pode colar sua chave pessoal do Google AI Studio aqui para ter respostas em tempo real.
-                  </p>
-                  <input
-                    type="password"
-                    value={customApiKey}
-                    onChange={(e) => setCustomApiKey(e.target.value)}
-                    placeholder="AIzaSy..."
-                    className="w-full px-3 py-2 text-[12px] font-mono rounded-lg bg-[#f9f8f5] dark:bg-[#131720] border border-[#dedbd3] dark:border-[#2b3548] text-[#1a1f2b] dark:text-white focus:outline-hidden focus:border-[#2d3a50]"
-                  />
-                </div>
-              )}
-
-              <button
-                onClick={handleSaveSettings}
-                className="w-full py-2.5 rounded-xl bg-[#202735] dark:bg-[#2d394d] hover:bg-[#131720] dark:hover:bg-[#3d4d68] text-white text-[13px] font-bold transition-all shadow-xs"
-              >
-                Salvar Configurações
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Messages Chat Area */}
-            <div className="flex-1 p-5 space-y-4 overflow-y-auto">
+        {/* Messages Chat Area */}
+        <div className="flex-1 p-5 space-y-4 overflow-y-auto">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
@@ -435,8 +323,6 @@ export const GeminiDrawer: React.FC<GeminiDrawerProps> = ({
                 </button>
               </form>
             </div>
-          </>
-        )}
       </div>
     </div>
   );
